@@ -5,6 +5,7 @@ import ergonames.Minter.MintToken._
 
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.{ErgoToolConfig, ErgoNodeConfig}
+
 object Main {
 
     val ergoToolConfig: ErgoToolConfig = createToolConfig("config.json")
