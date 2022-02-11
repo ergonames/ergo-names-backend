@@ -1,10 +1,10 @@
-package Node
+package ergonames.NodeConfiguration
 
 import org.ergoplatform.appkit.ErgoClient
 import org.ergoplatform.appkit.RestApiErgoClient
 import org.ergoplatform.appkit.config.{ErgoToolConfig, ErgoNodeConfig}
 
-object Node {
+object NodeTools {
 
     def createToolConfig(configFile: String): ErgoToolConfig = {
         val config: ErgoToolConfig = ErgoToolConfig.load(configFile)
@@ -17,7 +17,7 @@ object Node {
     }
 
     def createErgoClient(nodeConfig: ErgoNodeConfig): ErgoClient = {
-        val client: ErgoClient = RestApiErgoClient.create(nodeConfig)
+        val client: ErgoClient = RestApiErgoClient.create(nodeConfig, null)
         return client
     }
 }

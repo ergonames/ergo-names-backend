@@ -1,0 +1,17 @@
+{
+    "node": {
+        "nodeApi": {
+            "apiUrl": "http://192.168.1.16:9053/",
+            "apiKey": "mainnetapi"
+        },
+        "wallet": {
+            "mnemonic": "Mnemonic Words",
+            "password": "Wallet Password",
+            "mnemonicPassword": "Mnemonic Password"
+        },
+        "networkType": "MAINNET"
+    },
+    "parameters": {
+        "addressIndex": 0
+    }
+}
