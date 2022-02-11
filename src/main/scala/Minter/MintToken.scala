@@ -10,13 +10,14 @@ object MintToken {
 
   def mint(nodeConfig: ErgoNodeConfig, client: ErgoClient, tokenName: String, tokenDescription: String, recieverWalletAddress: Address): String = {
     val transactionJson: String = client.execute((ctx: BlockchainContext) => {
-      val amountToSpend: Long = 0L
+      val amountToSpend: Long = Parameters.OneErg
       val totalToSpend: Long = amountToSpend + Parameters.MinFee
 
       val mnemonic: Mnemonic = getWalletMnemonic(nodeConfig)
 
       val senderProver: ErgoProver = BoxOperations.createProver(ctx, mnemonic)
       val senderAddress: Address = senderProver.getAddress()
+      println(senderAddress.asP2PK())
 
       val unspentBoxes = ctx.getUnspentBoxesFor(senderAddress, 0, 20)
       val boxesToSpend = BoxOperations.selectTop(unspentBoxes, totalToSpend)

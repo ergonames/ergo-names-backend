@@ -6,6 +6,9 @@ import org.ergoplatform.appkit.config.{ErgoToolConfig, ErgoNodeConfig}
 
 object NodeTools {
 
+    private val defaultMainnetExplorerUrl = "https://api.ergoplatform.com"
+    private val defaultTestnetExplorerUrl = "https://api-testnet.ergoplatform.com"
+
     def createToolConfig(configFile: String): ErgoToolConfig = {
         val config: ErgoToolConfig = ErgoToolConfig.load(configFile)
         return config
@@ -17,7 +20,7 @@ object NodeTools {
     }
 
     def createErgoClient(nodeConfig: ErgoNodeConfig): ErgoClient = {
-        val client: ErgoClient = RestApiErgoClient.create(nodeConfig, null)
+        val client: ErgoClient = RestApiErgoClient.create(nodeConfig, defaultTestnetExplorerUrl)
         return client
     }
 }
