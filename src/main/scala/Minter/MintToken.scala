@@ -1,6 +1,7 @@
 package ergonames.Minter
 
 import ergonames.NodeConfiguration.NodeWallet.getWalletMnemonic
+import ergonames.NodeConfiguration.NodeWallet.getPublicErgoAddress
 
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoNodeConfig
@@ -15,9 +16,15 @@ object MintToken {
 
       val mnemonic: Mnemonic = getWalletMnemonic(nodeConfig)
 
-      val senderProver: ErgoProver = BoxOperations.createProver(ctx, mnemonic)
-      val senderAddress: Address = senderProver.getAddress()
-      println(senderAddress.asP2PK())
+      val senderProver: ErgoProver = ctx.newProverBuilder()
+        .withMnemonic(
+          SecretString.create(nodeConfig.getWallet().getMnemonic()),
+          SecretString.create(nodeConfig.getWallet().getPassword()))
+        .withEip3Secret(0)
+        .build()
+      
+      val senderAddress: Address = getPublicErgoAddress(nodeConfig)
+      // val senderAddress1: Address = senderProver.getAddress()
 
       val unspentBoxes: java.util.List[InputBox] = ctx.getUnspentBoxesFor(senderAddress, 0, 20)
       val boxesToSpend: java.util.List[InputBox] = BoxOperations.selectTop(unspentBoxes, totalToSpend)
