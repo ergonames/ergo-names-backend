@@ -15,8 +15,8 @@ object Main {
     def main(args: Array[String]): Unit = {
         println("Ergo Names Backend\n")
 
-        val tokenName: String = "test mint v0.1.1"
-        val tokenDescription: String = "Ergo Names test mint"
+        val tokenName: String = "Set Token Name"
+        val tokenDescription: String = "Set Token Description"
 
         val recieverWalletAddress: Address = Address.create("3WwKzFjZGrtKAV7qSCoJsZK9iJhLLrUa3uwd4yw52bVtDVv6j5TL")
 
