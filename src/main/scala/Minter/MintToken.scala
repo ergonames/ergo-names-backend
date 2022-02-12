@@ -45,7 +45,7 @@ object MintToken {
       .mintToken(token, tokenName, tokenDescription, 0)
       .contract(ctx.compileContract(
         ConstantsBuilder.create()
-          .item("reciverPublicKey", recieverWalletAddress.getPublicKey())
+          .item("recieverPublicKey", recieverWalletAddress.getPublicKey())
           .build(),
           "{ recieverPublicKey }")
       )
