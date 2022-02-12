@@ -19,30 +19,16 @@ object MintToken {
       val senderAddress: Address = senderProver.getAddress()
       println(senderAddress.asP2PK())
 
-      val unspentBoxes = ctx.getUnspentBoxesFor(senderAddress, 0, 20)
-      val boxesToSpend = BoxOperations.selectTop(unspentBoxes, totalToSpend)
+      val unspentBoxes: java.util.List[InputBox] = ctx.getUnspentBoxesFor(senderAddress, 0, 20)
+      val boxesToSpend: java.util.List[InputBox] = BoxOperations.selectTop(unspentBoxes, totalToSpend)
 
-      val domainToken = new ErgoToken(boxesToSpend.get(0).getId(), 1)
+      val domainToken: ErgoToken = new ErgoToken(boxesToSpend.get(0).getId(), 1)
 
-      val transactionBuilder = ctx.newTxBuilder()
+      val transactionBuilder: UnsignedTransactionBuilder = ctx.newTxBuilder()
 
-      val outBox = transactionBuilder.outBoxBuilder()
-        .value(amountToSpend)
-        .mintToken(domainToken, tokenName, tokenDescription, 0)
-        .contract(ctx.compileContract(
-          ConstantsBuilder.create()
-            .item("recieverPublicKey", recieverWalletAddress.getPublicKey())
-            .build(),
-            "{ recieverPublicKey }")
-        )
-        .build()
+      val outBox: OutBox = createOutBox(ctx, transactionBuilder, amountToSpend, domainToken, tokenName, tokenDescription, recieverWalletAddress)
 
-      val transaction: UnsignedTransaction = transactionBuilder
-        .boxesToSpend(boxesToSpend)
-        .outputs(outBox)
-        .fee(Parameters.MinFee)
-        .sendChangeTo(recieverWalletAddress.asP2PK())
-        .build()
+      val transaction: UnsignedTransaction = createTransaction(transactionBuilder, boxesToSpend, outBox, recieverWalletAddress)
 
       val signedTransaction: SignedTransaction = senderProver.sign(transaction)
 
@@ -51,6 +37,32 @@ object MintToken {
       signedTransaction.toJson(true)
     })
     transactionJson
+  }
+
+  private def createOutBox(ctx: BlockchainContext, transactionBuilder: UnsignedTransactionBuilder, amountToSpend: Long, token: ErgoToken, tokenName: String, tokenDescription: String, recieverWalletAddress: Address): OutBox = {
+    val outBox: OutBox = transactionBuilder.outBoxBuilder()
+      .value(amountToSpend)
+      .mintToken(token, tokenName, tokenDescription, 0)
+      .contract(ctx.compileContract(
+        ConstantsBuilder.create()
+          .item("reciverPublicKey", recieverWalletAddress.getPublicKey())
+          .build(),
+          "{ recieverPublicKey }")
+      )
+      .build()
+
+      return outBox
+  }
+
+  private def createTransaction(transactionBuilder: UnsignedTransactionBuilder, boxesToSpend: java.util.List[InputBox], outBox: OutBox, recieverWalletAddress: Address): UnsignedTransaction = {
+    val transaction: UnsignedTransaction = transactionBuilder
+      .boxesToSpend(boxesToSpend)
+      .outputs(outBox)
+      .fee(Parameters.MinFee)
+      .sendChangeTo(recieverWalletAddress.asP2PK())
+      .build()
+
+      return transaction
   }
 
 
