@@ -1,6 +1,6 @@
 # Ergo Names Backend
 
-Pre-release v0.1.1
+Pre-release v0.1.2
 
 ### Current Todo List
 - Handle Minting of Domain NFT (Done)
