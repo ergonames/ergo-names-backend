@@ -10,7 +10,7 @@ object MintToken {
 
   def mint(nodeConfig: ErgoNodeConfig, client: ErgoClient, tokenName: String, tokenDescription: String, recieverWalletAddress: Address): String = {
     val transactionJson: String = client.execute((ctx: BlockchainContext) => {
-      val amountToSpend: Long = Parameters.OneErg
+      val amountToSpend: Long = Parameters.MinChangeValue
       val totalToSpend: Long = amountToSpend + Parameters.MinFee
 
       val mnemonic: Mnemonic = getWalletMnemonic(nodeConfig)
