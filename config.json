@@ -13,8 +13,12 @@
     },
     "parameters": {
         "addressIndex": 0,
-        "mintingContractAddress": "2MqbjEo9wnqk3D9mzDnfWaZvunYxFfJ1EdxxvLM8sKrznndwTZrMvmjmERaLUr6qSBtMy3VYLfwH7gWrceh5egDfzanJKn2nwkpXDPWGryz3k8ZHT5v",
-        "nftMintRequestBoxId": "9c30255620a76b252a790bc1c4d0e52167c88e21d42402af83246b4014b2e095",
-        "nftReceiverAddress": "3WwM8LKw18msCLqzEaGNAaRgS4FqFQka1vsUCWjNtvdM9UTGSAuy"
+        "mintingContractAddress": "DmM1th5FZComVTEk39h9QYmSjSR2xJpTFqr1QCx7Ln4eTLrBbSBn6KcwcVDMQ1aZ6Eosdwxejvx9abWDfSP8iuHznWhNVrf6j53SiPvfWSwEeLBXGC2ZWq2TKRNTUVDohGjrUmPVCCiaQtJJjiMCKrjooAbuSA6ifrUVhST5sbrPkGo59nbR",
+        "nftMintRequestBoxId": "b5ee170910fa48262f36a492abccb4a684d547a01a5bc66fa66a41a98a43faf8",
+        "nftReceiverAddress": "3WwM8LKw18msCLqzEaGNAaRgS4FqFQka1vsUCWjNtvdM9UTGSAuy",
+        "tokenName": "v2_contract_issued_nft_test.erg",
+        "tokenDescription": "Early stage testing of token minting with contracts",
+        "tokenDecimals": 0,
+        "paymentAmount": 2500000
     }
 }
