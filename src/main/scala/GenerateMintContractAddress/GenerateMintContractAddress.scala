@@ -4,7 +4,7 @@ import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
 
 object GenerateMintContractAddress {
-  def generateMintingContract(configFileName: String): String = {
+  def generateMintContractAddress(configFileName: String): String = {
     // Node configuration values
     val conf: ErgoToolConfig = ErgoToolConfig.load(configFileName)
     val nodeConf: ErgoNodeConfig = conf.getNode
@@ -84,7 +84,7 @@ object GenerateMintContractAddress {
   }
 
   def main(args: Array[String]) : Unit = {
-    val txJson = generateMintingContract("config.json")
+    val txJson = generateMintContractAddress("config.json")
     print(txJson)
   }
 }

@@ -7,7 +7,7 @@ import org.ergoplatform.appkit.impl.ErgoTreeContract
 import java.util.stream.Collectors
 
 object SpendBoxAtMintContractAddress {
-  def mintNftAtContractAddress(configFileName: String): String = {
+  def spendBoxAtContractAddress(configFileName: String): String = {
     // Node configuration values
     val conf: ErgoToolConfig = ErgoToolConfig.load(configFileName)
     val nodeConf: ErgoNodeConfig = conf.getNode
@@ -80,7 +80,7 @@ object SpendBoxAtMintContractAddress {
   }
 
   def main(args: Array[String]): Unit = {
-    val txJson = mintNftAtContractAddress("config.json")
+    val txJson = spendBoxAtContractAddress("config.json")
     print(txJson)
   }
 }
