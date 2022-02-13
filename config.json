@@ -9,9 +9,12 @@
             "password": "Wallet Password",
             "mnemonicPassword": "Mnemonic Password"
         },
-        "networkType": "MAINNET"
+        "networkType": "TESTNET"
     },
     "parameters": {
-        "addressIndex": 0
+        "addressIndex": 0,
+        "mintingContractAddress": "2MqbjEo9wnqk3D9mzDnfWaZvunYxFfJ1EdxxvLM8sKrznndwTZrMvmjmERaLUr6qSBtMy3VYLfwH7gWrceh5egDfzanJKn2nwkpXDPWGryz3k8ZHT5v",
+        "nftMintRequestBoxId": "9c30255620a76b252a790bc1c4d0e52167c88e21d42402af83246b4014b2e095",
+        "nftReceiverAddress": "3WwM8LKw18msCLqzEaGNAaRgS4FqFQka1vsUCWjNtvdM9UTGSAuy"
     }
 }
