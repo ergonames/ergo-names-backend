@@ -29,8 +29,7 @@ object SpendBoxAtMintContractAddress {
       val senderProver: ErgoProver = ctx.newProverBuilder
         .withMnemonic(
           SecretString.create(nodeConf.getWallet.getMnemonic),
-          SecretString.create(nodeConf.getWallet.getPassword)
-        )
+          SecretString.create(nodeConf.getWallet.getPassword))
         .withEip3Secret(addressIndex)
         .build()
 
@@ -42,16 +41,18 @@ object SpendBoxAtMintContractAddress {
         .collect(Collectors.toList())
 
       // Amount to retrieve from nft minting request box - this is essentially collecting payment for the mint
-      val amountToSend: Long = 25000000L - Parameters.MinFee
+      val paymentAmount: Long = conf.getParameters.get("paymentAmount").toLong
+      val amountToSend: Long = paymentAmount - Parameters.MinFee
 
       // Create unsigned tx builder
       val txB: UnsignedTransactionBuilder = ctx.newTxBuilder
 
       // Create output box
+      // TODO: pull these from input registers
       val proposedToken: ErgoToken = new ErgoToken(spendingBoxes.get(0).getId, 1)
-      val tokenName: String = "contract_issued_nft_test.erg"
-      val tokenDescription: String = "Early stage testing of token minting with contracts"
-      val tokenDecimals: Int = 0
+      val tokenName: String = conf.getParameters.get("tokenName")
+      val tokenDescription: String = conf.getParameters.get("tokenDescription")
+      val tokenDecimals: Int = conf.getParameters.get("tokenDecimals").toInt
 
       val newBox: OutBox = txB.outBoxBuilder
         .mintToken(proposedToken, tokenName, tokenDescription, tokenDecimals)
