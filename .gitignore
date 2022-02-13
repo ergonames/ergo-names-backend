@@ -3,6 +3,8 @@
 .metals/
 .bloop/
 .vscode/
+.idea/
+null/
 
 project/target/
 project/project/
