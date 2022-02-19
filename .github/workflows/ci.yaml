@@ -1,0 +1,20 @@
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Setup Scala
+      uses: olafurpg/setup-scala@v10
+      
+    - name: Cache
+      uses: actions/cache@v2
+      with:
+        path: |
+            ~/.ivy2/cache
+            ~/.sbt
+        key: ubuntu-cache
+        
+    - name: SBT tests
+      run: sbt test
