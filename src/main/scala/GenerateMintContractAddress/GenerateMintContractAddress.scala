@@ -1,5 +1,6 @@
 package GenerateMintContractAddress
 
+import contracts.ErgoNamesMintingContract
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
 
@@ -36,35 +37,8 @@ object GenerateMintContractAddress {
       if (!boxes.isPresent)
         throw new ErgoClientException(s"Not enough coins in the wallet to pay $totalToSpend", null)
 
-      // Define protection script
-      // The script expects an NFT to be issued, and that it be issued by a specific wallet
-      val mintingContract: String = s"""
-      {
-        val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == SELF.id
-        val proposedTokenIsNonFungible = OUTPUTS(0).tokens(0)._2 == 1
-        val proposedTokenIsValidNFT = proposedTokenHasSameIdAsFirstTxInput && proposedTokenIsNonFungible
-
-        val expectedTokenName = INPUTS(0).R4[Coll[Byte]].get
-        val proposedTokenName = OUTPUTS(0).R4[Coll[Byte]].get
-        val tokenNameIsCorrect = expectedTokenName == proposedTokenName
-
-        val expectedPaymentAmount = INPUTS(0).R5[Long].get
-        val sentPaymentAmount = SELF.value
-        val paymentAmountIsCorrect = expectedPaymentAmount == sentPaymentAmount
-
-        val expectedReceiverAddress = INPUTS(0).R6[Coll[Byte]].get
-        val proposedReceiverAddress = OUTPUTS(0).propositionBytes
-        val receiverAddressIsCorrect = expectedReceiverAddress == proposedReceiverAddress
-
-        val tokenCanBeMinted = proposedTokenIsValidNFT &&
-                               tokenNameIsCorrect &&
-                               paymentAmountIsCorrect &&
-                               receiverAddressIsCorrect &&
-                               ergoNamesPk
-
-        sigmaProp(tokenCanBeMinted)
-      }
-      """.stripMargin
+      // Get the contract
+      val mintingContract: String = ErgoNamesMintingContract.getScript
 
       // Create unsigned tx builder
       val txB: UnsignedTransactionBuilder = ctx.newTxBuilder
@@ -86,7 +60,7 @@ object GenerateMintContractAddress {
         .boxesToSpend(boxes.get)
         .outputs(newBox)
         .fee(Parameters.MinFee)
-        .sendChangeTo(senderProver.getP2PKAddress)
+        .sendChangeTo(senderProver.getEip3Addresses.get(0).getErgoAddress)
         .build()
 
       // Sign transaction with prover
