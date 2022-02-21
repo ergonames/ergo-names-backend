@@ -56,7 +56,8 @@ object ProcessMintingRequest {
 
   def main(args: Array[String]) : Unit = {
     val conf: ErgoToolConfig = ErgoToolConfig.load("config.json")
-    val txJson = processMintingRequest(conf, NetworkType.TESTNET)
+    val networkType = if (conf.getNode.getNetworkType == "TESTNET") NetworkType.TESTNET else NetworkType.MAINNET
+    val txJson = processMintingRequest(conf, networkType)
     print(txJson)
   }
 }
