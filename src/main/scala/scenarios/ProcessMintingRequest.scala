@@ -7,6 +7,37 @@ import utils.ErgoNamesUtils
 import scala.collection.JavaConverters._
 
 object ProcessMintingRequest {
+
+  def createTx(ctx: BlockchainContext,
+    inputs: java.util.List[InputBox],
+    senderAddress: Address,
+    mintRequestBox: InputBox,
+    ergoNamesStandardTokenDescription: String,  networkType: NetworkType) = {
+
+         val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(
+          ctx,
+          networkType,
+          value = Parameters.MinChangeValue,
+          mintRequestBox, // contains some register data to be extracted
+          tokenDescription = ergoNamesStandardTokenDescription)
+
+        val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(
+          ctx,
+          mintRequestBox,
+          senderAddress.asP2PK())
+
+        val inputsWithMintBox =  List(mintRequestBox) ++ (inputs).asScala
+
+         val tx = ctx.newTxBuilder
+          .boxesToSpend(inputsWithMintBox.asJava)
+          .outputs(issuanceBox, paymentCollectionBox)
+          .fee(Parameters.MinFee)
+          .sendChangeTo(senderAddress.asP2PK())
+           .build()
+
+        tx
+  }
+
   def processMintingRequest(conf: ErgoToolConfig, networkType: NetworkType): String = {
     val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, networkType)
 
@@ -26,26 +57,11 @@ object ProcessMintingRequest {
         if (!boxesToSpend.isPresent)
           throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
 
-        val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(
-          ctx,
-          networkType,
-          value = Parameters.MinChangeValue,
-          mintRequestBox, // contains some register data to be extracted
-          tokenDescription = ergoNamesStandardTokenDescription)
 
-        val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(
-          ctx,
-          mintRequestBox,
-          senderProver.getP2PKAddress)
 
         // TODO: Move to ErgoNamesUtils
-        val inputs = List.concat(List(mintRequestBox), boxesToSpend.get.asScala)
-        val tx = ctx.newTxBuilder
-          .boxesToSpend(inputs.asJava)
-          .outputs(issuanceBox, paymentCollectionBox)
-          .fee(Parameters.MinFee)
-          .sendChangeTo(senderProver.getP2PKAddress)
-          .build()
+      val inputs = List.concat(List(mintRequestBox), boxesToSpend.get.asScala)
+      val tx = createTx(ctx, inputs.asJava, senderProver.getAddress(),mintRequestBox, ergoNamesStandardTokenDescription, networkType)
 
         val signedTx = senderProver.sign(tx)
         val txId = ctx.sendTransaction(signedTx)

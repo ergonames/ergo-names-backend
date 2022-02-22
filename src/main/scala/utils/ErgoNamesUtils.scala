@@ -32,15 +32,17 @@ object ErgoNamesUtils {
     wallet.getUnspentBoxes(totalToSpend)
   }
 
-  def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): OutBox = {
+  def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
     val compiledContract: ErgoContract = ctx.compileContract(
         ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build(),
         script)
 
-    ctx.newTxBuilder.outBoxBuilder
+    val b = ctx.newTxBuilder.outBoxBuilder
       .value(amountToSend)
       .contract(compiledContract)
       .build()
+
+    (b, compiledContract)
   }
 
   def buildUnsignedTx(ctx: BlockchainContext, inputs: java.util.List[InputBox], outputs: OutBox, fee: Long, changeAddress: ErgoAddress): UnsignedTransaction = {
