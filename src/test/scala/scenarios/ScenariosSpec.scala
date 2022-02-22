@@ -39,7 +39,7 @@ class WorkflowSpec extends WordSpecLike with Matchers {
       // submit minting request
       val paymentAmount = 2500000
       val customerBoxes = customer.wallet.getUnspentBoxes(paymentAmount + Parameters.MinFee).get
-      val royaltyPercentage = 10
+      val royaltyPercentage = 20
       val tokenName = "v2_contract_issued_nft_test.erg"
       val nftReceiverAddress = customer.wallet.getAddress
       val senderAddress = customer.wallet.getAddress

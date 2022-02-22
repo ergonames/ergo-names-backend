@@ -33,7 +33,7 @@ object ProcessMintingRequest {
           .outputs(issuanceBox, paymentCollectionBox)
           .fee(Parameters.MinFee)
           .sendChangeTo(senderAddress.asP2PK())
-           .build()
+          .build()
 
         tx
   }
