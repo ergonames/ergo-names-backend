@@ -6,6 +6,25 @@ import org.ergoplatform.appkit._
 import utils.ErgoNamesUtils
 
 object DeployMintingContract {
+
+  def createTx(ctx: BlockchainContext,  boxesToSpend: java.util.List[InputBox], senderAddress: Address) = {
+
+        val (contractBox: OutBox, contract) = ErgoNamesUtils.buildContractBox(
+          ctx,
+          amountToSend = Parameters.MinChangeValue,
+          script = ErgoNamesMintingContract.getScript,
+              ergoNamesPk = senderAddress.asP2PK().pubkey)
+
+        val tx: UnsignedTransaction = ErgoNamesUtils.buildUnsignedTx(
+          ctx,
+          inputs = boxesToSpend,
+          outputs = contractBox,
+          fee = Parameters.MinFee,
+          changeAddress = senderAddress.asP2PK())
+
+       (tx, contract)
+  }
+
   def deployMintingContract(conf: ErgoToolConfig, networkType: NetworkType): String = {
     val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, networkType)
 
@@ -17,18 +36,7 @@ object DeployMintingContract {
         if (!boxesToSpend.isPresent)
           throw new ErgoClientException(s"Not enough coins in the wallet to pay $totalToSpend", null)
 
-        val contractBox: OutBox = ErgoNamesUtils.buildContractBox(
-          ctx,
-          amountToSend = Parameters.MinChangeValue,
-          script = ErgoNamesMintingContract.getScript,
-          ergoNamesPk = senderProver.getP2PKAddress.pubkey)
-
-        val tx: UnsignedTransaction = ErgoNamesUtils.buildUnsignedTx(
-          ctx,
-          inputs = boxesToSpend.get,
-          outputs = contractBox,
-          fee = Parameters.MinFee,
-          changeAddress = senderProver.getP2PKAddress)
+       val (tx, _) = createTx(ctx, boxesToSpend.get, senderProver.getAddress())
 
         val signedTx = senderProver.sign(tx)
         val txId = ctx.sendTransaction(signedTx)
