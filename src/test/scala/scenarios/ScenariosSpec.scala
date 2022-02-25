@@ -7,7 +7,6 @@ import scenarios.DeployMintingContract
 import scenarios.ProcessMintingRequest
 import scenarios.SubmitMintingRequest
 
-
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.impl.ErgoTreeContract
 import org.ergoplatform.P2PKAddress
@@ -15,10 +14,10 @@ import org.ergoplatform.ErgoAddressEncoder
 
 import org.scalatest._
 import org.scalatest.Assertions._
-import org.scalatest.{Matchers, WordSpecLike}
+import org.scalatest.{ Matchers, WordSpecLike }
 
 import io.github.dav009.ergopuppet.Simulator._
-import io.github.dav009.ergopuppet.model.{TokenAmount, TokenInfo}
+import io.github.dav009.ergopuppet.model.{ TokenAmount, TokenInfo }
 
 import sigmastate.lang.exceptions.InterpreterException
 
@@ -54,7 +53,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     val tokenName = "v2_contract_issued_nft_test.erg"
     val nftReceiverAddress = customer.wallet.getAddress
     val senderAddress = customer.wallet.getAddress
-          // check no boxes left under contract
+    // check no boxes left under contract
     assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 1)
 
     val submitTx = SubmitMintingRequest.createTx(
@@ -65,8 +64,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       tokenName,
       paymentAmount,
       nftReceiverAddress,
-      senderAddress
-    )
+      senderAddress)
     val signedsubmitTx = customer.wallet.sign(submitTx)
     ctx.sendTransaction(signedsubmitTx)
     assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 2)
@@ -86,8 +84,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       NetworkType.MAINNET,
       value = Parameters.MinChangeValue,
       mintRequestBox,
-      tokenDescription = tokenDesc
-    )
+      tokenDescription = tokenDesc)
 
     val (goodTx, goodTxArgs) =
       ProcessMintingRequest.createTx(
@@ -96,8 +93,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
         ergoNames.wallet.getAddress,
         mintRequestBox,
         tokenDesc,
-        NetworkType.MAINNET
-      )
+        NetworkType.MAINNET)
 
     "entity aside from ergonames should not be able to mint" in {
       val otherBoxes = other.wallet
@@ -109,8 +105,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
         other.wallet.getAddress,
         mintRequestBox,
         tokenDesc,
-        NetworkType.MAINNET
-      )
+        NetworkType.MAINNET)
       assertThrows[InterpreterException] {
         val signedmintTxshouldFail = other.wallet.sign(mintTxshoudFail)
         ctx.sendTransaction(signedmintTxshouldFail)
@@ -142,9 +137,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
         .value(paymentAmount - 1)
         .contract(
           new ErgoTreeContract(
-            ergoNames.wallet.getAddress.getErgoAddress().script
-          )
-        )
+            ergoNames.wallet.getAddress.getErgoAddress().script))
         .build()
 
       val badPaymnetTx = ctx.newTxBuilder
@@ -164,8 +157,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       val incorrectDestination = ctx.newTxBuilder.outBoxBuilder
         .value(paymentAmount - 1)
         .contract(
-          new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script)
-        )
+          new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script))
         .build()
 
       val badDestinationTx = ctx.newTxBuilder
@@ -186,8 +178,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
         .mintToken(token, tokenName, tokenDesc, 1)
         .value(Parameters.MinChangeValue)
         .contract(
-          new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script)
-        )
+          new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script))
         .build()
 
       val badNftOwnerTx = ctx.newTxBuilder
@@ -209,21 +200,20 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
 
       // assert nft owners
       val customerTokens = blockchainSim.getUnspentTokensFor(customer.wallet.getAddress)
-      val  expectedCustomerTokens = List(new TokenAmount(new TokenInfo(mintRequestBox.getId(), tokenName), 1))
+      val expectedCustomerTokens = List(new TokenAmount(new TokenInfo(mintRequestBox.getId(), tokenName), 1))
       assert(customerTokens == expectedCustomerTokens)
 
       // assert ergoname service assets
       // one tx fee + the amount payed by customer + initial amount
       val costsOfDeployContract = Parameters.MinChangeValue + Parameters.MinFee
       val gainsOfMintingNFT = paymentAmount
-      val costsOfMintingNFT =  Parameters.MinFee + Parameters.MinChangeValue
+      val costsOfMintingNFT = Parameters.MinFee + Parameters.MinChangeValue
       val expectedErgonamesCoins = initialAmount - costsOfDeployContract - costsOfMintingNFT + gainsOfMintingNFT
       val ergoNamesCoins = blockchainSim.getUnspentCoinsFor(ergoNames.wallet.getAddress)
       assert(ergoNamesCoins == expectedErgonamesCoins)
 
       // because mint request was susccessful there should be only 1 box left under the mintingContractAddress
       assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 1)
-
 
     }
 
