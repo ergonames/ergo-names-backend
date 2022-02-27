@@ -29,22 +29,29 @@ import scala.collection.JavaConverters._
 class ProcessMintLambdaSpec extends WordSpecLike with Matchers with MockitoSugar {
 
   "should handle sqs events" in {
+
+    // mocking sqs messages
     val event = mock[SQSEvent]
     val lambdaCtx = mock[Context]
     val request1 = new SQSMessage()
     request1.setBody(Json.toJson(MintRequestSqsMessage("dummy desc1", "box1")).toString())
     val request2 = new SQSMessage()
     request2.setBody(Json.toJson(MintRequestSqsMessage("dummy desc2", "box2")).toString())
+    when(event.getRecords).thenReturn(List(request1, request2).asJava)
+
+    // mocking minting function
     val mockedProcessMintingRequest = spy(new TestableMinter)
     doAnswer(_=>"dummyTx")
     .when(mockedProcessMintingRequest)
     .processMintingRequest(any(), any(), any(), any(), any())
+
+    // calling the lambda handler function
     val argumentBoxId = ArgumentCaptor.forClass(classOf[String])
     val argumentDesc = ArgumentCaptor.forClass(classOf[String])
-    when(event.getRecords).thenReturn(List(request1, request2).asJava)
     mockedProcessMintingRequest.lambdaEventHandler(event, lambdaCtx)
-    verify(mockedProcessMintingRequest, times(2)).processMintingRequest(any(),any(),any(),argumentBoxId.capture(), argumentDesc.capture())
 
+    // verifying minting function got called with expected arguments
+    verify(mockedProcessMintingRequest, times(2)).processMintingRequest(any(),any(),any(),argumentBoxId.capture(), argumentDesc.capture())
     assert(List("box1", "box2").asJava == argumentBoxId.getAllValues())
     assert(List("dummy desc1", "dummy desc2").asJava == argumentDesc.getAllValues())
   }
