@@ -79,8 +79,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       .getUnspentBoxes(Parameters.MinFee + Parameters.MinChangeValue + 100000)
       .get
 
-    val (_, token, _, _, _, _, contract) = ErgoNamesUtils.issuanceBoxArgs(
-      ctx,
+    val (token, _, _, _, _, contract) = ErgoNamesUtils.issuanceBoxArgs(
       NetworkType.MAINNET,
       value = Parameters.MinChangeValue,
       mintRequestBox,

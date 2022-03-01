@@ -76,7 +76,7 @@ object ErgoNamesUtils {
     matches.get(0)
   }
 
-  def issuanceBoxArgs(ctx:BlockchainContext, networkType: NetworkType, value: Long, mintRequestBox: InputBox, tokenDescription: String) = {
+  def issuanceBoxArgs(networkType: NetworkType, value: Long, mintRequestBox: InputBox, tokenDescription: String) = {
      val R5_tokenNameBytes = mintRequestBox.getRegisters.get(1).getValue.asInstanceOf[CollOverArray[Byte]].toArray
     val R7_receiverAddressBytes = mintRequestBox.getRegisters.get(3).getValue.asInstanceOf[CollOverArray[Byte]].toArray
     val deserializedReceiverAddress = ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R7_receiverAddressBytes)
@@ -87,7 +87,7 @@ object ErgoNamesUtils {
     val proposedTokenDescription = tokenDescription
     val tokenDecimals = 0
     val contract = new ErgoTreeContract(proposedReceiverAddress.getErgoAddress.script)
-    (ctx, token, proposedTokenName, proposedTokenDescription, tokenDecimals, value, contract)
+    (token, proposedTokenName, proposedTokenDescription, tokenDecimals, value, contract)
   }
 
   def buildBoxWithTokenToMint(

@@ -29,13 +29,15 @@ trait Minter{
     mintRequestBox: InputBox,
     ergoNamesStandardTokenDescription: String,  networkType: NetworkType) = {
 
-         val issuanceBoxArgs = ErgoNamesUtils.issuanceBoxArgs(ctx,
+         val (token, tokenName, tokenDesc, tokenDecimals, ergValue, contract) = ErgoNamesUtils.issuanceBoxArgs(
           networkType,
           value = Parameters.MinChangeValue,
           mintRequestBox, // contains some register data to be extracted
           tokenDescription = ergoNamesStandardTokenDescription)
 
-        val issuanceBox =(ErgoNamesUtils.buildBoxWithTokenToMint _).tupled(issuanceBoxArgs)
+         val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(ctx,
+           token, tokenName, tokenDesc,
+           tokenDecimals, ergValue, contract)
 
         val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(
           ctx,
