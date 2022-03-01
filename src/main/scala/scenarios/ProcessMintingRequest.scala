@@ -1,18 +1,23 @@
 package scenarios
 
+
 import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-import org.ergoplatform.appkit.{Address, BlockchainContext, ErgoClientException, InputBox, NetworkType, Parameters}
+import org.ergoplatform.appkit.{Address, BlockchainContext, ErgoClientException, InputBox, NetworkType, Parameters, OutBox}
+import org.ergoplatform.P2PKAddress
+
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import utils.ErgoNamesUtils
 
 import scala.collection.JavaConverters._
 
+
 case class MintRequestSqsMessage(tokenDescription: String, mintRequestBoxId: String)
 
+case class MintingTxArgs(inputs: List[InputBox], outputs: List[OutBox], fee: Long, receiverAddress: P2PKAddress)
 
 trait Minter{
   implicit val mintRequestSqsMessageReads = Json.reads[MintRequestSqsMessage]
@@ -24,12 +29,13 @@ trait Minter{
     mintRequestBox: InputBox,
     ergoNamesStandardTokenDescription: String,  networkType: NetworkType) = {
 
-        val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(
-          ctx,
+         val issuanceBoxArgs = ErgoNamesUtils.issuanceBoxArgs(ctx,
           networkType,
           value = Parameters.MinChangeValue,
           mintRequestBox, // contains some register data to be extracted
           tokenDescription = ergoNamesStandardTokenDescription)
+
+        val issuanceBox =(ErgoNamesUtils.buildBoxWithTokenToMint _).tupled(issuanceBoxArgs)
 
         val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(
           ctx,
@@ -38,14 +44,14 @@ trait Minter{
 
         val inputsWithMintBox =  List(mintRequestBox) ++ (inputs).asScala
 
-         val tx = ctx.newTxBuilder
+        val tx = ctx.newTxBuilder
           .boxesToSpend(inputsWithMintBox.asJava)
           .outputs(issuanceBox, paymentCollectionBox)
           .fee(Parameters.MinFee)
           .sendChangeTo(senderAddress.asP2PK())
-          .build()
-
-        tx
+           .build()
+      val txArgs = MintingTxArgs(inputsWithMintBox, List(issuanceBox, paymentCollectionBox), Parameters.MinFee, senderAddress.asP2PK())
+      (tx, txArgs)
   }
 
   def processMintingRequest(conf: ErgoToolConfig, networkType: NetworkType, mintContractAddress:String, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
@@ -66,7 +72,7 @@ trait Minter{
 
         // TODO: Move to ErgoNamesUtils
       val inputs = List.concat(List(mintRequestBox), boxesToSpend.get.asScala)
-      val tx = createTx(ctx, inputs.asJava, senderProver.getAddress(),mintRequestBox, ergoNamesStandardTokenDescription, networkType)
+      val (tx, _) = createTx(ctx, inputs.asJava, senderProver.getAddress(),mintRequestBox, ergoNamesStandardTokenDescription, networkType)
 
         val signedTx = senderProver.sign(tx)
         val txId = ctx.sendTransaction(signedTx)
