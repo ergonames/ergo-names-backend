@@ -3,7 +3,6 @@ package scenarios
 import utils.ErgoNamesUtils
 import scala.collection.JavaConverters._
 
-import scenarios.DeployMintingContract
 import scenarios.ProcessMintingRequest
 import scenarios.SubmitMintingRequest
 
@@ -38,12 +37,10 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     // creates a minting contract address on which requests can be added
     val amountToSpend = Parameters.MinChangeValue + Parameters.MinFee
     val boxes = ergoNames.wallet.getUnspentBoxes(amountToSpend).get
-    val (serviceTx, mintContract) =
-      DeployMintingContract.createTx(ctx, boxes, ergoNames.wallet.getAddress)
-    val signedserviceTx = ergoNames.wallet.sign(serviceTx)
-    ctx.sendTransaction(signedserviceTx)
+    val mintingContract = ErgoNamesUtils.contract(ctx, ergoNames.wallet.getAddress.getPublicKey())
+
     val mintingContractAddress =
-      Address.fromErgoTree(mintContract.getErgoTree(), NetworkType.TESTNET)
+      Address.fromErgoTree(mintingContract.getErgoTree(), NetworkType.TESTNET)
 
     // submit minting request
     val paymentAmount = 2500000
@@ -54,7 +51,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     val nftReceiverAddress = customer.wallet.getAddress
     val senderAddress = customer.wallet.getAddress
     // check no boxes left under contract
-    assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 1)
+    assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 0)
 
     val submitTx = SubmitMintingRequest.createTx(
       ctx,
@@ -67,7 +64,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       senderAddress)
     val signedsubmitTx = customer.wallet.sign(submitTx)
     ctx.sendTransaction(signedsubmitTx)
-    assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 2)
+    assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 1)
 
     // preparing data for a mint request
     val tokenDesc = "Early stage testing of token minting with contracts"
@@ -207,12 +204,12 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       val costsOfDeployContract = Parameters.MinChangeValue + Parameters.MinFee
       val gainsOfMintingNFT = paymentAmount
       val costsOfMintingNFT = Parameters.MinFee + Parameters.MinChangeValue
-      val expectedErgonamesCoins = initialAmount - costsOfDeployContract - costsOfMintingNFT + gainsOfMintingNFT
+      val expectedErgonamesCoins = initialAmount - costsOfMintingNFT + gainsOfMintingNFT
       val ergoNamesCoins = blockchainSim.getUnspentCoinsFor(ergoNames.wallet.getAddress)
       assert(ergoNamesCoins == expectedErgonamesCoins)
 
       // because mint request was susccessful there should be only 1 box left under the mintingContractAddress
-      assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 1)
+      assert(ctx.getUnspentBoxesFor(mintingContractAddress, 0, Int.MaxValue).size() == 0)
 
     }
 
