@@ -5,4 +5,6 @@ RUN sbt assembly
 
 FROM public.ecr.aws/lambda/java:11
 COPY --from=builder /lambda/src/target/scala-2.12/ergo-names-backend-assembly-0.1.0-SNAPSHOT.jar ${LAMBDA_TASK_ROOT}/lib/
+COPY config.json .
+COPY ergo_node_config.json .
 CMD ["scenarios.ProcessMintingRequest::lambdaEventHandler"]
