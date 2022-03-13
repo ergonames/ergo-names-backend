@@ -3,6 +3,7 @@ package scenarios
 
 import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
+import com.amazonaws.services.sqs.AmazonSQSClientBuilder
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
@@ -14,6 +15,16 @@ import utils.ErgoNamesUtils
 
 import scala.collection.JavaConverters._
 
+object Config {
+
+  implicit val configReads = Json.reads[Config]
+  def load(pathToConfigFile: String) = {
+    val content = scala.io.Source.fromFile(pathToConfigFile).mkString
+    Json.parse(content).as[Config]
+  }
+}
+
+case class Config(queueUrl:String, dry: Boolean)
 
 case class MintRequestSqsMessage(tokenDescription: String, mintRequestBoxId: String)
 
@@ -83,6 +94,11 @@ trait Minter{
     txJson
   }
 
+  def getSqsClient(region: String) = {
+    val sqsClient = AmazonSQSClientBuilder.standard().withRegion(region).build()
+    (sqsClient)
+  }
+
  /*
   This function is an entrypoint for an AWS lambda consuming events form sqs.
    - aws feeds a SQSEvent to this function.
@@ -90,20 +106,32 @@ trait Minter{
    - this function expects each sqs message to be a json string describe by MintRequestSqsMessage
    - this function parses each json sqs message into a MintRequestSqsMessage object
    - then it feeds each MintRequestSqsMessage to the function which mints a domain
- */
+ */ 
   def lambdaEventHandler(sqsEvent: SQSEvent, context: Context) : Unit = {
-        val conf: ErgoToolConfig = ErgoToolConfig.load("config.json")
+        val config = Config.load("config.json")
+        val sqsClient = getSqsClient("us-west-2")
+        val conf: ErgoToolConfig = ErgoToolConfig.load("ergo_node_config.json")
         val networkType = if (conf.getNode.getNetworkType == "TESTNET") NetworkType.TESTNET else NetworkType.MAINNET
        val mintingContractAddress = conf.getParameters.get("mintingContractAddress")
        val sqsMessages = sqsEvent.getRecords().asScala
-       val mintRequests = sqsMessages.map(_.getBody())
-                                     .map(Json.parse(_).as[MintRequestSqsMessage])
+    val mintRequests = sqsMessages.map{ m =>
+      val parsed =  Json.parse(m.getBody()).as[MintRequestSqsMessage]
+      (m, parsed)
+    }
+                                     
        mintRequests.map{
-              mintRequest =>
-             // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
-             processMintingRequest(conf, networkType, mintingContractAddress,
-             mintRequest.mintRequestBoxId, mintRequest.tokenDescription)
-             // ToDo delete sqs message if successful
+         case (message, mintRequest) =>
+           // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
+             println("mintRequest")
+             println(mintRequest)
+             if (!config.dry){
+               // ToDo avoid creating an ergoclinet per message
+               processMintingRequest(conf, networkType, mintingContractAddress,
+               mintRequest.mintRequestBoxId,
+               mintRequest.tokenDescription)
+             }
+             sqsClient.deleteMessage(config.queueUrl, message.getReceiptHandle())
+             print("deleted message")
       }
 
   }
