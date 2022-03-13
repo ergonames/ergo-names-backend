@@ -1,5 +1,6 @@
 package utils
 
+import contracts.ErgoNamesMintingContract
 import org.ergoplatform.{ErgoAddress, P2PKAddress}
 import org.ergoplatform.appkit.config.ErgoNodeConfig
 import org.ergoplatform.appkit._
@@ -33,9 +34,7 @@ object ErgoNamesUtils {
   }
 
   def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
-    val compiledContract: ErgoContract = ctx.compileContract(
-        ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build(),
-        script)
+    val compiledContract: ErgoContract = ErgoNamesMintingContract.getContract(ctx, ergoNamesPk)
 
     val b = ctx.newTxBuilder.outBoxBuilder
       .value(amountToSend)

@@ -27,7 +27,7 @@ import scala.collection.JavaConverters._
  class TestableMinter extends Minter
 
 class ProcessMintLambdaSpec extends WordSpecLike with Matchers with MockitoSugar {
-
+/*
   "should handle sqs events" in {
 
     // mocking sqs messages
@@ -54,7 +54,7 @@ class ProcessMintLambdaSpec extends WordSpecLike with Matchers with MockitoSugar
     verify(mockedProcessMintingRequest, times(2)).processMintingRequest(any(),any(),any(),argumentBoxId.capture(), argumentDesc.capture())
     assert(List("box1", "box2").asJava == argumentBoxId.getAllValues())
     assert(List("dummy desc1", "dummy desc2").asJava == argumentDesc.getAllValues())
-  }
+  }*/
 
   // ToDo should handle failing minting requests
 
