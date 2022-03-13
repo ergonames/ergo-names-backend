@@ -5,6 +5,7 @@ import scala.collection.JavaConverters._
 
 import scenarios.ProcessMintingRequest
 import scenarios.SubmitMintingRequest
+import contracts.ErgoNamesMintingContract
 
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.impl.ErgoTreeContract
@@ -37,7 +38,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     // creates a minting contract address on which requests can be added
     val amountToSpend = Parameters.MinChangeValue + Parameters.MinFee
     val boxes = ergoNames.wallet.getUnspentBoxes(amountToSpend).get
-    val mintingContract = ErgoNamesUtils.contract(ctx, ergoNames.wallet.getAddress.getPublicKey())
+    val mintingContract = ErgoNamesMintingContract.getContract(ctx, ergoNames.wallet.getAddress.getPublicKey())
 
     val mintingContractAddress =
       Address.fromErgoTree(mintingContract.getErgoTree(), NetworkType.TESTNET)

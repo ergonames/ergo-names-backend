@@ -1,5 +1,8 @@
 package contracts
 
+import sigmastate.basics.DLogProtocol.ProveDlog
+import org.ergoplatform.appkit._
+
 /**
  * ====== Contract Info ======
  * Contract for minting ErgoNames NFTs.
@@ -122,5 +125,13 @@ object ErgoNamesMintingContract {
       """.stripMargin
 
     script
+  }
+
+  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog) = {
+    val script = getScript
+    val compiledContract: ErgoContract = ctx.compileContract(
+      ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build(),
+      script)
+    compiledContract  
   }
 }

@@ -33,16 +33,8 @@ object ErgoNamesUtils {
     wallet.getUnspentBoxes(totalToSpend)
   }
 
-  def contract(ctx: BlockchainContext, ergoNamesPk: ProveDlog) = {
-    val script = ErgoNamesMintingContract.getScript
-    val compiledContract: ErgoContract = ctx.compileContract(
-      ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build(),
-      script)
-    compiledContract  
-}
-
   def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
-    val compiledContract: ErgoContract = contract(ctx, ergoNamesPk)
+    val compiledContract: ErgoContract = ErgoNamesMintingContract.getContract(ctx, ergoNamesPk)
 
     val b = ctx.newTxBuilder.outBoxBuilder
       .value(amountToSend)
