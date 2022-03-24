@@ -128,12 +128,11 @@ object ErgoNamesMintingContract {
     script
   }
 
-  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog) = {
+  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog): ErgoContract = {
     val script = getScript
-    val compiledContract: ErgoContract = ctx.compileContract(
-      ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build(),
-      script)
-    compiledContract  
+    val constants = ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build()
+    val compiledContract: ErgoContract = ctx.compileContract(constants, script)
+    compiledContract
   }
 
   def getContractAddress(ctx: BlockchainContext, walletConfig: WalletConfig): Address = {
