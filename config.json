@@ -1,4 +1,6 @@
 {
-    "queueUrl": "https://sqs.us-west-2.amazonaws.com/343255070305/mint-requests-queue-dev",
-    "dry": true
+    "queueUrl": "https://sqs.us-east-2.amazonaws.com/453627713520/mint-requests-queue-testnet",
+    "dry": true,
+    "secretName": "ergo-node-testnet-config",
+    "awsRegion": "us-east-2"
 }
