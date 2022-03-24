@@ -2,6 +2,7 @@ package contracts
 
 import sigmastate.basics.DLogProtocol.ProveDlog
 import org.ergoplatform.appkit._
+import org.ergoplatform.appkit.config.WalletConfig
 
 /**
  * ====== Contract Info ======
@@ -133,5 +134,16 @@ object ErgoNamesMintingContract {
       ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build(),
       script)
     compiledContract  
+  }
+
+  def getContractAddress(ctx: BlockchainContext, walletConfig: WalletConfig): Address = {
+    val ergoNamesAddress = Address.fromMnemonic(
+      ctx.getNetworkType,
+      SecretString.create(walletConfig.getMnemonic),
+      SecretString.create(walletConfig.getPassword))
+
+    val contract = getContract(ctx, ergoNamesAddress.getPublicKey)
+    val contractAddress = Address.fromErgoTree(contract.getErgoTree, ctx.getNetworkType)
+    contractAddress
   }
 }
