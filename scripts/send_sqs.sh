@@ -1,1 +1,1 @@
-aws sqs send-message --queue-url https://sqs.us-west-2.amazonaws.com/ACCOUNTNUMBER/mint-requests-queue-dev --message-body '{ "tokenDescription": "dummy_dec", "mintRequestBoxId": "1223"}'
+aws sqs send-message --queue-url https://sqs.us-east-2.amazonaws.com/ACCOUNT_NUMBER/mint-requests-queue-dev --message-body '{ "mintTxId": "txId_123", "mintRequestBoxId": "boxId_123"}'
