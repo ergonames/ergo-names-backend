@@ -2,37 +2,20 @@ package scenarios
 
 
 import com.amazonaws.services.lambda.runtime.Context
-import com.amazonaws.services.lambda.runtime.events.{SQSEvent}
-import com.amazonaws.services.sqs.AmazonSQSClientBuilder
-import play.api.libs.json._
-import play.api.libs.functional.syntax._
-
-import org.ergoplatform.appkit.{Address, BlockchainContext, ErgoClientException, InputBox, NetworkType, Parameters, OutBox}
-import org.ergoplatform.P2PKAddress
-
+import com.amazonaws.services.lambda.runtime.events.SQSEvent
+import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
+import models.{MintRequestSqsMessage, MintingTxArgs}
+import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
-import utils.ErgoNamesUtils
+import play.api.libs.json._
+import utils.{AwsHelper, ConfigManager, ErgoNamesUtils}
 
+import java.io.StringReader
 import scala.collection.JavaConverters._
 
-object Config {
-
-  implicit val configReads = Json.reads[Config]
-  def load(pathToConfigFile: String) = {
-    val content = scala.io.Source.fromFile(pathToConfigFile).mkString
-    Json.parse(content).as[Config]
-  }
-}
-
-case class Config(queueUrl:String, dry: Boolean)
-
-case class MintRequestSqsMessage(tokenDescription: String, mintRequestBoxId: String)
-
-case class MintingTxArgs(inputs: List[InputBox], outputs: List[OutBox], fee: Long, receiverAddress: P2PKAddress)
-
-trait Minter{
-  implicit val mintRequestSqsMessageReads = Json.reads[MintRequestSqsMessage]
-  implicit val mintRequestSqsMessageWrites = Json.writes[MintRequestSqsMessage]
+trait Minter {
+  implicit val mintRequestSqsMessageReads: Reads[MintRequestSqsMessage] = Json.reads[MintRequestSqsMessage]
+  implicit val mintRequestSqsMessageWrites: OWrites[MintRequestSqsMessage] = Json.writes[MintRequestSqsMessage]
 
   def createTx(ctx: BlockchainContext,
     inputs: java.util.List[InputBox],
