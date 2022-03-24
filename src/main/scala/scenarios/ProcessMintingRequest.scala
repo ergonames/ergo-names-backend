@@ -21,7 +21,7 @@ trait Minter {
     inputs: java.util.List[InputBox],
     senderAddress: Address,
     mintRequestBox: InputBox,
-    ergoNamesStandardTokenDescription: String,  networkType: NetworkType) = {
+    ergoNamesStandardTokenDescription: String,  networkType: NetworkType): (UnsignedTransaction, MintingTxArgs) = {
 
          val (token, tokenName, tokenDesc, tokenDecimals, ergValue, contract) = ErgoNamesUtils.issuanceBoxArgs(
           networkType,
@@ -38,7 +38,7 @@ trait Minter {
           mintRequestBox,
           senderAddress.asP2PK())
 
-        val inputsWithMintBox =  List(mintRequestBox) ++ (inputs).asScala
+        val inputsWithMintBox =  List(mintRequestBox) ++ inputs.asScala
 
         val tx = ctx.newTxBuilder
           .boxesToSpend(inputsWithMintBox.asJava)
@@ -46,12 +46,13 @@ trait Minter {
           .fee(Parameters.MinFee)
           .sendChangeTo(senderAddress.asP2PK())
            .build()
+
       val txArgs = MintingTxArgs(inputsWithMintBox, List(issuanceBox, paymentCollectionBox), Parameters.MinFee, senderAddress.asP2PK())
+
       (tx, txArgs)
   }
 
   def processMintingRequest(conf: ErgoToolConfig, networkType: NetworkType, mintContractAddress:String, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
-    
         val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, networkType)
         val mintingContractAddress = Address.create(mintContractAddress)
         val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
@@ -67,8 +68,8 @@ trait Minter {
           throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
 
         // TODO: Move to ErgoNamesUtils
-      val inputs = List.concat(List(mintRequestBox), boxesToSpend.get.asScala)
-      val (tx, _) = createTx(ctx, inputs.asJava, senderProver.getAddress(),mintRequestBox, ergoNamesStandardTokenDescription, networkType)
+        val inputs = List.concat(List(mintRequestBox), boxesToSpend.get.asScala)
+        val (tx, _) = createTx(ctx, inputs.asJava, senderProver.getAddress,mintRequestBox, ergoNamesStandardTokenDescription, networkType)
 
         val signedTx = senderProver.sign(tx)
         val txId = ctx.sendTransaction(signedTx)
@@ -77,19 +78,19 @@ trait Minter {
     txJson
   }
 
-  def getSqsClient(region: String) = {
+  def getSqsClient(region: String): AmazonSQS = {
     val sqsClient = AmazonSQSClientBuilder.standard().withRegion(region).build()
-    (sqsClient)
+    sqsClient
   }
 
  /*
   This function is an entrypoint for an AWS lambda consuming events form sqs.
    - aws feeds a SQSEvent to this function.
-   - a SQSEvent contains multiple SQS messages
-   - this function expects each sqs message to be a json string describe by MintRequestSqsMessage
+   - an SQSEvent contains multiple SQS messages
+   - this function expects each sqs message to be a json string described by MintRequestSqsMessage
    - this function parses each json sqs message into a MintRequestSqsMessage object
-   - then it feeds each MintRequestSqsMessage to the function which mints a domain
- */ 
+   - then it feeds each MintRequestSqsMessage to the function which mints an ergoname NFT
+ */
   def lambdaEventHandler(sqsEvent: SQSEvent, context: Context) : Unit = {
         val config = Config.load("config.json")
         val sqsClient = getSqsClient("us-west-2")
