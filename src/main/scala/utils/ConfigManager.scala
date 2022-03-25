@@ -2,6 +2,8 @@ package utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
+import models.ErgoNamesConfig
+import play.api.libs.json.{Json, Reads}
 
 import java.io.FileNotFoundException
 
@@ -26,4 +28,14 @@ object ConfigManager {
       case e: FileNotFoundException => null
     }
   }
+
+  def getJsonConfigAsTypedObject: ErgoNamesConfig = {
+    try {
+      val content = scala.io.Source.fromFile(pathToConfigFile).mkString
+      Json.parse(content).as[ErgoNamesConfig]
+    } catch {
+      case e: FileNotFoundException => null
+    }
+  }
 }
+
