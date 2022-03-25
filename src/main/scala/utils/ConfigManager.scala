@@ -8,7 +8,8 @@ import play.api.libs.json.{Json, Reads}
 import java.io.FileNotFoundException
 
 object ConfigManager {
-  val pathToLocalConfig: String = "config.json"
+  val pathToConfigFile: String = "config.json"
+  implicit val configReads: Reads[ErgoNamesConfig] = Json.reads[ErgoNamesConfig]
 
   def get(key: String): String = {
     val env = sys.env.getOrElse(key, null)
@@ -20,7 +21,7 @@ object ConfigManager {
 
   def getJsonConfigAsMap: Map[String, String] = {
     try {
-      val jsonContent = scala.io.Source.fromFile(pathToLocalConfig)
+      val jsonContent = scala.io.Source.fromFile(pathToConfigFile)
       val mapper = new ObjectMapper() with ClassTagExtensions
       mapper.registerModule(DefaultScalaModule)
       mapper.readValue[Map[String, String]](jsonContent.reader())
