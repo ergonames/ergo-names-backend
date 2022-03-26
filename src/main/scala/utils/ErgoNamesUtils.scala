@@ -67,6 +67,14 @@ object ErgoNamesUtils {
   }
 
   def getMintRequestBox(ctx: BlockchainContext, contractAddress: Address, mintRequestBoxId: String): InputBox = {
+    // TODO: Add some error handling here in case box is not found.
+    //  Make sure to have proper logging around this case.
+    //  If a box is not found, it might be because the tx that created it has not been confirmed yet.
+    //  In such a case, we'd just need to wait for confirmation.
+    //  If we throw an exception, the message will be retied N amount of times before going into the DLQ.
+    //  We can tweak redrive policy and message delay configs to give a tx enough time to confirm.
+    //  If after X minutes of waiting and retrying the box still can be found, we can let the message go to the DLQ to inspect further.
+    // this might need to iterate boxes at the contract address if there are a lot of unspent boxes (unprocessed mint requests)
     val matches: java.util.List[InputBox] = ctx.getUnspentBoxesFor(contractAddress, 0, 20)
       .stream()
       .filter(_.getId == ErgoId.create(mintRequestBoxId))
