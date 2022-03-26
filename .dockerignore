@@ -1,0 +1,43 @@
+# Created by https://www.toptal.com/developers/gitignore/api/sbt,scala,bloop,metals
+# Edit at https://www.toptal.com/developers/gitignore?templates=sbt,scala,bloop,metals
+
+# IDE
+.vscode/
+.idea/
+
+### Bloop ###
+.bloop/
+
+### Metals ###
+.metals/
+project/**/metals.sbt
+
+### SBT ###
+# Simple Build Tool
+# http://www.scala-sbt.org/release/docs/Getting-Started/Directories.html#configuring-version-control
+
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/target/
+project/project/
+project/plugins/project/
+null/
+.history
+.cache
+.lib/
+.bsp
+
+### Scala ###
+*.class
+*.log
+
+# End of https://www.toptal.com/developers/gitignore/api/sbt,scala,bloop,metals
+
+
+
+### Others ###
+tmp/
+scripts/graal/sdk/
