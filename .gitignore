@@ -9,4 +9,5 @@ null/
 project/target/
 project/project/
 
-testnet_config.json
+src/main/scala/SpendBoxAtMintContractAddress/*
+src/main/scala/SubmitPaymentForNFT/*
