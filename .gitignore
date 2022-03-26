@@ -9,5 +9,5 @@ null/
 project/target/
 project/project/
 
-src/main/scala/SpendBoxAtMintContractAddress/*
-src/main/scala/SubmitPaymentForNFT/*
+src/main/scala/SpendBoxAtMintContractAddress/
+src/main/scala/SubmitPaymentForNFT/
