@@ -19,64 +19,73 @@ trait Minter {
 
   def createTx(ctx: BlockchainContext,
                boxesToCoverTxFees: java.util.List[InputBox],
-    senderAddress: Address,
-    mintRequestBox: InputBox,
+               senderAddress: Address,
+               mintRequestBox: InputBox,
                ergoNamesStandardTokenDescription: String): (UnsignedTransaction, MintingTxArgs) = {
-         val (token, tokenName, tokenDesc, tokenDecimals, ergValue, contract) = ErgoNamesUtils.issuanceBoxArgs(
+          println("Building issuance box arguments")
+          val (token, tokenName, tokenDesc, tokenDecimals, ergValue, contract) = ErgoNamesUtils.issuanceBoxArgs(
             ctx.getNetworkType,
-          value = Parameters.MinChangeValue,
-          mintRequestBox, // contains some register data to be extracted
-          tokenDescription = ergoNamesStandardTokenDescription)
+            value = Parameters.MinChangeValue,
+            mintRequestBox, // contains some register data to be extracted
+            tokenDescription = ergoNamesStandardTokenDescription)
 
-         val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(ctx,
-           token, tokenName, tokenDesc,
-           tokenDecimals, ergValue, contract)
+          println("Building issuance box")
+          val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(ctx,
+            token, tokenName, tokenDesc,
+            tokenDecimals, ergValue, contract)
 
-        val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(
-          ctx,
-          mintRequestBox,
-          senderAddress.asP2PK())
+          println("Building payment collection box")
+          val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(
+            ctx,
+            mintRequestBox,
+            senderAddress.asP2PK())
 
           val inputsWithMintBox =  List(mintRequestBox) ++ (boxesToCoverTxFees).asScala
 
-        val tx = ctx.newTxBuilder
-          .boxesToSpend(inputsWithMintBox.asJava)
-          .outputs(issuanceBox, paymentCollectionBox)
-          .fee(Parameters.MinFee)
-          .sendChangeTo(senderAddress.asP2PK())
-           .build()
+          println("Building minting tx")
+          val tx = ctx.newTxBuilder
+            .boxesToSpend(inputsWithMintBox.asJava)
+            .outputs(issuanceBox, paymentCollectionBox)
+            .fee(Parameters.MinFee)
+            .sendChangeTo(senderAddress.asP2PK())
+            .build()
 
-      val txArgs = MintingTxArgs(inputsWithMintBox, List(issuanceBox, paymentCollectionBox), Parameters.MinFee, senderAddress.asP2PK())
+          val txArgs = MintingTxArgs(inputsWithMintBox, List(issuanceBox, paymentCollectionBox), Parameters.MinFee, senderAddress.asP2PK())
 
-      (tx, txArgs)
-  }
+          (tx, txArgs)
+    }
 
   // TODO: Consider passing ErgoClient and ErgoProver
   def processMintingRequest(conf: ErgoToolConfig, mintContractAddress:String, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
         val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, conf.getNode.getNetworkType)
         val mintingContractAddress = Address.create(mintContractAddress)
         val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
-        val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
+            println("Building prover")
+            val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
 
-        val mintRequestBox = ErgoNamesUtils.getMintRequestBox(ctx, mintingContractAddress, mintRequestBoxId)
-        if (mintRequestBox == null)
-          throw new ErgoClientException(s"Could not find mint request with box id $mintRequestBoxId", null)
+            println(s"Fetching mint request box with id $mintRequestBoxId from contract address $mintingContractAddress")
+            val mintRequestBox = ErgoNamesUtils.getMintRequestBox(ctx, mintingContractAddress, mintRequestBoxId)
+            if (mintRequestBox == null)
+              throw new ErgoClientException(s"Could not find mint request with box id $mintRequestBoxId", null)
 
+            println(s"Getting ${Parameters.MinFee} nanoergs from wallet to cover tx fee")
             // TODO: Alternatively, consider including tx fee as part of payment.
             //  This way, we don't need to fetch boxes from the ErgoNames wallet, which would result in one less call to the node.
             val boxesToCoverTxFees = ErgoNamesUtils.getBoxesToSpendFromWallet(ctx, totalToSpend = Parameters.MinFee)
             if (!boxesToCoverTxFees.isPresent)
-          throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
+              throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
 
-        // TODO: Move to ErgoNamesUtils
-        val inputs = List.concat(List(mintRequestBox), boxesToSpend.get.asScala)
-        val (tx, _) = createTx(ctx, inputs.asJava, senderProver.getAddress,mintRequestBox, ergoNamesStandardTokenDescription, networkType)
+            // TODO: Consider passing concatenated inputs to createTx. Would reduce number of params AND wouldnt need to concat them again later
+            val (tx, _) = createTx(ctx, boxesToCoverTxFees.get, senderProver.getAddress, mintRequestBox, ergoNamesStandardTokenDescription)
 
-        val signedTx = senderProver.sign(tx)
-        val txId = ctx.sendTransaction(signedTx)
-        signedTx.toJson(true)
-    })
-    txJson
+            println("Signing minting tx")
+            val signedTx = senderProver.sign(tx)
+            println("Sending signed minting to node")
+            val txId = ctx.sendTransaction(signedTx)
+
+            signedTx.toJson(true)
+        })
+        txJson
   }
 
   def getSqsClient(region: String): AmazonSQS = {
@@ -145,16 +154,19 @@ trait Minter {
            // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
            println(s"mint request: $mintRequest")
            if (!dry.toBoolean){
-            println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
-             // ToDo avoid creating an ergo client per message
-             // TODO: Update processMintingRequest to take Address instead of String
+              println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
+              // ToDo avoid creating an ergo client per message
+              // TODO: Update processMintingRequest to take Address instead of String
               val txJson = processMintingRequest(
-               ergoNodeConfig,
-               mintingContractAddress,
-               mintRequest.mintRequestBoxId,
-               ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
+                ergoNodeConfig,
+                mintingContractAddress,
+                mintRequest.mintRequestBoxId,
+                ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
 
+              println("Successfully submitted minting tx to node")
+              println(txJson)
            }
+
            sqsClient.deleteMessage(queueUrl, message.getReceiptHandle)
            print("Deleted message")
        }
