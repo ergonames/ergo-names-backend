@@ -89,8 +89,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
         ergoNamesUnspentBoxes,
         ergoNames.wallet.getAddress,
         mintRequestBox,
-        tokenDesc,
-        NetworkType.MAINNET)
+        tokenDesc)
 
     "entity aside from ergonames should not be able to mint" in {
       val otherBoxes = other.wallet
@@ -101,8 +100,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
         otherBoxes,
         other.wallet.getAddress,
         mintRequestBox,
-        tokenDesc,
-        NetworkType.MAINNET)
+        tokenDesc)
       assertThrows[InterpreterException] {
         val signedmintTxshouldFail = other.wallet.sign(mintTxshoudFail)
         ctx.sendTransaction(signedmintTxshouldFail)

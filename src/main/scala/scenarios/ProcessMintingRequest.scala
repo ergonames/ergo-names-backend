@@ -21,10 +21,9 @@ trait Minter {
     inputs: java.util.List[InputBox],
     senderAddress: Address,
     mintRequestBox: InputBox,
-    ergoNamesStandardTokenDescription: String,  networkType: NetworkType): (UnsignedTransaction, MintingTxArgs) = {
-
+               ergoNamesStandardTokenDescription: String): (UnsignedTransaction, MintingTxArgs) = {
          val (token, tokenName, tokenDesc, tokenDecimals, ergValue, contract) = ErgoNamesUtils.issuanceBoxArgs(
-          networkType,
+            ctx.getNetworkType,
           value = Parameters.MinChangeValue,
           mintRequestBox, // contains some register data to be extracted
           tokenDescription = ergoNamesStandardTokenDescription)
@@ -52,8 +51,9 @@ trait Minter {
       (tx, txArgs)
   }
 
-  def processMintingRequest(conf: ErgoToolConfig, networkType: NetworkType, mintContractAddress:String, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
-        val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, networkType)
+  // TODO: Consider passing ErgoClient and ErgoProver
+  def processMintingRequest(conf: ErgoToolConfig, mintContractAddress:String, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
+        val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, conf.getNode.getNetworkType)
         val mintingContractAddress = Address.create(mintContractAddress)
         val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
         val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
@@ -147,12 +147,12 @@ trait Minter {
             println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
              // ToDo avoid creating an ergo client per message
              // TODO: Update processMintingRequest to take Address instead of String
-             processMintingRequest(
+              val txJson = processMintingRequest(
                ergoNodeConfig,
-               networkType,
                mintingContractAddress,
                mintRequest.mintRequestBoxId,
                ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
+
            }
            sqsClient.deleteMessage(queueUrl, message.getReceiptHandle)
            print("Deleted message")
@@ -167,7 +167,7 @@ object ProcessMintingRequest extends Minter {
     val tokenDesc = conf.getParameters.get("tokenDescription")
     val mintRequestBoxId = conf.getParameters.get("nftMintRequestBoxId")
     val mintingContractAddress = conf.getParameters.get("mintingContractAddress")
-    val txJson = processMintingRequest(conf, networkType, mintingContractAddress, mintRequestBoxId, tokenDesc)
+    val txJson = processMintingRequest(conf, mintingContractAddress, mintRequestBoxId, tokenDesc)
     print(txJson)
   }
 }
