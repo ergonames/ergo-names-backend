@@ -59,8 +59,8 @@ object SubmitMintingRequest {
   }
 
   def main(args: Array[String]) : Unit = {
-    val conf: ErgoToolConfig = ErgoToolConfig.load("config.json")
-    val networkType = if (conf.getNode.getNetworkType == "TESTNET") NetworkType.TESTNET else NetworkType.MAINNET
+    val conf: ErgoToolConfig = ErgoToolConfig.load("ergo_node_config.json")
+    val networkType = conf.getNode.getNetworkType
     val txJson = submitMintingRequest(conf, networkType)
     print(txJson)
   }

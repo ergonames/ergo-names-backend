@@ -18,7 +18,7 @@ trait Minter {
   implicit val mintRequestSqsMessageWrites: OWrites[MintRequestSqsMessage] = Json.writes[MintRequestSqsMessage]
 
   def createTx(ctx: BlockchainContext,
-    inputs: java.util.List[InputBox],
+               boxesToCoverTxFees: java.util.List[InputBox],
     senderAddress: Address,
     mintRequestBox: InputBox,
                ergoNamesStandardTokenDescription: String): (UnsignedTransaction, MintingTxArgs) = {
@@ -37,7 +37,7 @@ trait Minter {
           mintRequestBox,
           senderAddress.asP2PK())
 
-        val inputsWithMintBox =  List(mintRequestBox) ++ inputs.asScala
+          val inputsWithMintBox =  List(mintRequestBox) ++ (boxesToCoverTxFees).asScala
 
         val tx = ctx.newTxBuilder
           .boxesToSpend(inputsWithMintBox.asJava)
@@ -62,9 +62,10 @@ trait Minter {
         if (mintRequestBox == null)
           throw new ErgoClientException(s"Could not find mint request with box id $mintRequestBoxId", null)
 
-        // Needed to cover tx fee. Or is it needed? Can't we deduct it from mintRequestBox? Try it!
-        val boxesToSpend = ErgoNamesUtils.getBoxesToSpendFromWallet(ctx, totalToSpend = Parameters.MinFee)
-        if (!boxesToSpend.isPresent)
+            // TODO: Alternatively, consider including tx fee as part of payment.
+            //  This way, we don't need to fetch boxes from the ErgoNames wallet, which would result in one less call to the node.
+            val boxesToCoverTxFees = ErgoNamesUtils.getBoxesToSpendFromWallet(ctx, totalToSpend = Parameters.MinFee)
+            if (!boxesToCoverTxFees.isPresent)
           throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
 
         // TODO: Move to ErgoNamesUtils
@@ -162,10 +163,10 @@ trait Minter {
 
 object ProcessMintingRequest extends Minter {
   def main(args: Array[String]) : Unit = {
-    val conf: ErgoToolConfig = ErgoToolConfig.load("config.json")
-    val networkType = if (conf.getNode.getNetworkType == "TESTNET") NetworkType.TESTNET else NetworkType.MAINNET
+    val conf: ErgoToolConfig = ErgoToolConfig.load("ergo_node_config.json")
+    val networkType = conf.getNode.getNetworkType
     val tokenDesc = conf.getParameters.get("tokenDescription")
-    val mintRequestBoxId = conf.getParameters.get("nftMintRequestBoxId")
+    val mintRequestBoxId = conf.getParameters.get("mintRequestBoxId")
     val mintingContractAddress = conf.getParameters.get("mintingContractAddress")
     val txJson = processMintingRequest(conf, mintingContractAddress, mintRequestBoxId, tokenDesc)
     print(txJson)
