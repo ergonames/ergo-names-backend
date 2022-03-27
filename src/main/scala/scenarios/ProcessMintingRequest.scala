@@ -4,10 +4,11 @@ package scenarios
 import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
-import models.{MintRequestSqsMessage, MintingTxArgs}
+import models.{ErgoNamesConfig, MintRequestSqsMessage, MintingTxArgs}
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import play.api.libs.json._
+import scala.util.{Try,Success,Failure}
 import utils.{AwsHelper, ConfigManager, ErgoNamesUtils}
 
 import java.io.StringReader
@@ -102,18 +103,18 @@ trait Minter {
    - then it feeds each MintRequestSqsMessage to the function which mints an ergoname NFT
  */
   def lambdaEventHandler(sqsEvent: SQSEvent, context: Context) : Unit = {
-        println("Getting AWS region")
-        val awsRegion = AwsHelper.getRegion
-        if (awsRegion == null)
-          throw new Exception("Could not find aws region")
 
-        println("Getting AWS Secrets Manager, secret name for Ergo node config")
-        val secretName = ConfigManager.get("secretName")
-        if (secretName == null)
-          throw new Exception("Could not find config value 'secretName'")
-        println(s"Getting secret $secretName from AWS Secrets Manager")
-        val secretString = AwsHelper.getSecretFromSecretsManager(secretName, awsRegion)
-
+        // Getting a config from env or from file
+    val config: ErgoNamesConfig = ConfigManager.getConfig match {
+          case Success(c) => c
+          case Failure(x) => throw new Exception(x)
+        }
+        //println("Getting AWS region")
+        //val awsRegion = AwsHelper.getRegion.get
+        //println("Getting AWS Secrets Manager, secret name for Ergo node config")
+        //val secretName = ConfigManager.get("secretName")
+        //println(s"Getting secret $secretName from AWS Secrets Manager")
+        val secretString = AwsHelper.getSecretFromSecretsManager(config.secretName, config.awsRegion)
         println("Parsing secret string into ErgoToolConfig type")
         val ergoNodeConfig = ErgoToolConfig.load(new StringReader(secretString))
 
@@ -127,12 +128,9 @@ trait Minter {
         val mintingContractAddress = ergoNodeConfig.getParameters.get("mintingContractAddress")
         println(s"Minting Contract Address: $mintingContractAddress")
 
-        val queueUrl = ConfigManager.get("mintRequestsQueueUrl")
-        if (queueUrl == null)
-          throw new Exception("Could not find config value 'mintRequestsQueue'")
-
+        val queueUrl = config.mintRequestsQueueUrl
         println(s"Building AWS SQS Client for queue $queueUrl")
-        val sqsClient = getSqsClient(awsRegion)
+        val sqsClient = getSqsClient(config.awsRegion)
 
         val sqsMessages = sqsEvent.getRecords.asScala
         println(s"Pulled ${sqsMessages.length} message(s) from queue")
@@ -143,9 +141,8 @@ trait Minter {
         }
 
         println("Checking if Lambda is running in dry mode")
-        val dry = ConfigManager.get("dry")
-        if (dry == null) throw new Exception("Could not find config flag 'dry'")
-        val dryMsg = if (dry.toBoolean)  "Running in dry mode - will not process mint request or attempt to query node"
+   
+        val dryMsg = if (config.dry)  "Running in dry mode - will not process mint request or attempt to query node"
                      else "NOT Running in dry mode - will attempt to process minting request and query node"
         println(dryMsg)
 
@@ -153,7 +150,7 @@ trait Minter {
          case (message, mintRequest) =>
            // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
            println(s"mint request: $mintRequest")
-           if (!dry.toBoolean){
+           if (!config.dry){
               println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
               // ToDo avoid creating an ergo client per message
               // TODO: Update processMintingRequest to take Address instead of String

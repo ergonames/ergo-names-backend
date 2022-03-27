@@ -3,7 +3,6 @@ name := "ergo-names-backend"
 scalaVersion := "2.12.15"
 
 // Scala dependencies
-libraryDependencies += "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
 libraryDependencies += "org.ergoplatform" %% "ergo-appkit" % "4.0.7"
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2"
 libraryDependencies += "io.github.dav009" %% "ergopuppet" % "0.0.0+28-8ee0ca24+20220219-2144"  % Test
