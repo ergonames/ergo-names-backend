@@ -105,15 +105,12 @@ trait Minter {
   def lambdaEventHandler(sqsEvent: SQSEvent, context: Context) : Unit = {
 
         // Getting a config from env or from file
-    val config: ErgoNamesConfig = ConfigManager.getConfig match {
+        val config: ErgoNamesConfig = ConfigManager.getConfig match {
           case Success(c) => c
           case Failure(x) => throw new Exception(x)
         }
-        //println("Getting AWS region")
-        //val awsRegion = AwsHelper.getRegion.get
-        //println("Getting AWS Secrets Manager, secret name for Ergo node config")
-        //val secretName = ConfigManager.get("secretName")
-        //println(s"Getting secret $secretName from AWS Secrets Manager")
+
+        println(s"Getting secret $config.secretName from AWS Secrets Manager")
         val secretString = AwsHelper.getSecretFromSecretsManager(config.secretName, config.awsRegion)
         println("Parsing secret string into ErgoToolConfig type")
         val ergoNodeConfig = ErgoToolConfig.load(new StringReader(secretString))
