@@ -14,7 +14,10 @@ object ConfigManager {
        val mintRequestsQueueUrl = sys.env.get("mintRequestsQueueUrl").get
        val dry = sys.env.get("dry").get.toBoolean
        val secretName = sys.env.get("secretName").get
-       val awsRegion = sys.env.get("awsRegion").get
+       val awsRegion = sys.env.get("awsRegion") match {
+         case Some(r) => r
+         case None => sys.env.get("AWS_REGION").get  
+       }
        ErgoNamesConfig(mintRequestsQueueUrl, dry, secretName, awsRegion)
      }
     )
