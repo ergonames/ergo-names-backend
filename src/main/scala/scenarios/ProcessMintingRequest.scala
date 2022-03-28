@@ -6,7 +6,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
 import models.{ErgoNamesConfig, MintRequestSqsMessage, MintingTxArgs}
 import org.ergoplatform.appkit._
-import org.ergoplatform.appkit.config.ErgoToolConfig
+import org.ergoplatform.appkit.config.{ErgoToolConfig}
 import play.api.libs.json._
 import scala.util.{Try,Success,Failure}
 import utils.{AwsHelper, ConfigManager, ErgoNamesUtils}
@@ -57,9 +57,7 @@ trait Minter {
     }
 
   // TODO: Consider passing ErgoClient and ErgoProver
-  def processMintingRequest(conf: ErgoToolConfig, mintContractAddress:String, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
-        val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, conf.getNode.getNetworkType)
-        val mintingContractAddress = Address.create(mintContractAddress)
+  def mint(ergoClient: ErgoClient, conf: ErgoToolConfig, mintingContractAddress: Address, mintRequestBoxId: String,  ergoNamesStandardTokenDescription: String): String = {
         val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
             println("Building prover")
             val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
@@ -94,6 +92,25 @@ trait Minter {
     sqsClient
   }
 
+  def processSqsMessage(sqsClient: AmazonSQS, message: SQSEvent.SQSMessage, mintRequest:MintRequestSqsMessage, ergoClient: ErgoClient, ergoNodeConfig: ErgoToolConfig, mintingContractAddress: Address, dry: Boolean, queueUrl: String): String = {
+    if (dry){
+      "DryDummyTx"
+    } else {
+      println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
+      val txJson = mint(
+                ergoClient,
+                ergoNodeConfig,
+                mintingContractAddress,
+                mintRequest.mintRequestBoxId,
+                ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
+      println(s"Successfully submitted minting $mintRequest to node")
+      println(s"TX: $txJson")
+      sqsClient.deleteMessage(queueUrl, message.getReceiptHandle)
+      print(s"Deleted message with Id: $message.getMessageId()")
+      txJson
+    }
+  }
+
  /*
   This function is an entrypoint for an AWS lambda consuming events form sqs.
    - aws feeds a SQSEvent to this function.
@@ -122,7 +139,7 @@ trait Minter {
         println(s"Building Ergo client for interacting with node at ${ergoNodeConfig.getNode.getNodeApi.getApiUrl}")
         val ergoClient = ErgoNamesUtils.buildErgoClient(ergoNodeConfig.getNode, ergoNodeConfig.getNode.getNetworkType)
 
-        val mintingContractAddress = ergoNodeConfig.getParameters.get("mintingContractAddress")
+        val mintingContractAddress =  Address.create(ergoNodeConfig.getParameters.get("mintingContractAddress"))
         println(s"Minting Contract Address: $mintingContractAddress")
 
         val queueUrl = config.mintRequestsQueueUrl
@@ -133,8 +150,8 @@ trait Minter {
         println(s"Pulled ${sqsMessages.length} message(s) from queue")
         println("Extracting and parsing mint request(s) from SQS message(s)")
         val mintRequests = sqsMessages.map{ m =>
-          val parsed = Json.parse(m.getBody).as[MintRequestSqsMessage]
-          (m, parsed)
+          val mintRequest = Json.parse(m.getBody).as[MintRequestSqsMessage]
+          (m, mintRequest)
         }
 
         println("Checking if Lambda is running in dry mode")
@@ -143,27 +160,27 @@ trait Minter {
                      else "NOT Running in dry mode - will attempt to process minting request and query node"
         println(dryMsg)
 
-        mintRequests.foreach{
-         case (message, mintRequest) =>
-           // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
-           println(s"mint request: $mintRequest")
-           if (!config.dry){
-              println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
-              // ToDo avoid creating an ergo client per message
-              // TODO: Update processMintingRequest to take Address instead of String
-              val txJson = processMintingRequest(
-                ergoNodeConfig,
-                mintingContractAddress,
-                mintRequest.mintRequestBoxId,
-                ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
-
-              println("Successfully submitted minting tx to node")
-              println(txJson)
-           }
-
-           sqsClient.deleteMessage(queueUrl, message.getReceiptHandle)
-           print("Deleted message")
-       }
+        // looping throug the requests and try to mint them
+        val results = mintRequests.map{
+         case (message: SQSEvent.SQSMessage, mintRequest: MintRequestSqsMessage) =>
+            println(s"mint request: $mintRequest")
+            val r = Try(processSqsMessage(sqsClient, message, mintRequest, ergoClient, ergoNodeConfig, mintingContractAddress, config.dry, queueUrl))
+            (mintRequest, r)
+        }
+        val total = results.size
+        val successful = results.map(_._2.isSuccess).size
+        val unsuccess = successful - total
+        println(s"Successful Mints: $successful / $total")
+        println(s"Unsuccessful Mints: $unsuccess / $total ")
+        results.foreach{
+         case (mintRequest :MintRequestSqsMessage, result: Try[String])  =>
+          result match {
+            case Failure(err) =>
+              println(s"Failed processing $mintRequest due to $err")
+            case Success(tx) =>
+              println(s"Succesfully minted $mintRequest tx: $tx")
+          }
+        }
   }
 }
 
@@ -173,8 +190,9 @@ object ProcessMintingRequest extends Minter {
     val networkType = conf.getNode.getNetworkType
     val tokenDesc = conf.getParameters.get("tokenDescription")
     val mintRequestBoxId = conf.getParameters.get("mintRequestBoxId")
-    val mintingContractAddress = conf.getParameters.get("mintingContractAddress")
-    val txJson = processMintingRequest(conf, mintingContractAddress, mintRequestBoxId, tokenDesc)
+    val mintingContractAddress = Address.create(conf.getParameters.get("mintingContractAddress"))
+    val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, conf.getNode.getNetworkType)
+    val txJson = mint(ergoClient, conf, mintingContractAddress, mintRequestBoxId, tokenDesc)
     print(txJson)
   }
 }
