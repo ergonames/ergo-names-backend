@@ -97,12 +97,11 @@ trait Minter {
       "DryDummyTx"
     } else {
       println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
-      val txJson = mint(
-                ergoClient,
-                ergoNodeConfig,
-                mintingContractAddress,
-                mintRequest.mintRequestBoxId,
-                ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
+      val txJson = mint(ergoClient,
+        ergoNodeConfig,
+        mintingContractAddress,
+        mintRequest.mintRequestBoxId,
+        ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
       println(s"Successfully submitted minting $mintRequest to node")
       println(s"TX: $txJson")
       sqsClient.deleteMessage(queueUrl, message.getReceiptHandle)
