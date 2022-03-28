@@ -34,10 +34,10 @@ object ConfigManager {
     // try to read config from env
     // otherwise revert to try to read config from file
     // fail if a valid config can't be created from either
-    Try(fromEnv()) match {
-      case Success(c) => c
-      case Failure(_) => {
-        println("using configuration from file")
+    fromEnv() match {
+      case Success(c) => Success(c)
+      case Failure(r) => {
+        println("reading config from file..")
         fromFile()
       }
     }
