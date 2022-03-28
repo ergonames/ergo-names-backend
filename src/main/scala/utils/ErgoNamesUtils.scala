@@ -22,8 +22,7 @@ object ErgoNamesUtils {
     ctx.newProverBuilder
       .withMnemonic(
         SecretString.create(nodeConf.getWallet.getMnemonic),
-        SecretString.create(nodeConf.getWallet.getPassword)
-      )
+        SecretString.create(nodeConf.getWallet.getPassword))
       .withEip3Secret(0)
       .build()
   }
@@ -33,7 +32,11 @@ object ErgoNamesUtils {
     wallet.getUnspentBoxes(totalToSpend)
   }
 
-  def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
+  def buildContractBox(
+      ctx: BlockchainContext,
+      amountToSend: Long,
+      script: String,
+      ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
     val compiledContract: ErgoContract = ErgoNamesMintingContract.getContract(ctx, ergoNamesPk)
 
     val b = ctx.newTxBuilder.outBoxBuilder
@@ -44,7 +47,12 @@ object ErgoNamesUtils {
     (b, compiledContract)
   }
 
-  def buildUnsignedTx(ctx: BlockchainContext, inputs: java.util.List[InputBox], outputs: OutBox, fee: Long, changeAddress: ErgoAddress): UnsignedTransaction = {
+  def buildUnsignedTx(
+      ctx: BlockchainContext,
+      inputs: java.util.List[InputBox],
+      outputs: OutBox,
+      fee: Long,
+      changeAddress: ErgoAddress): UnsignedTransaction = {
     ctx.newTxBuilder
       .boxesToSpend(inputs)
       .outputs(outputs)
@@ -53,11 +61,18 @@ object ErgoNamesUtils {
       .build()
   }
 
-  def buildMintingRequestBox(ctx: BlockchainContext, mintingContractAddress: Address, royalty: Int, tokenName: String, paymentAmount: Long, receiverAddress: Address): OutBox = {
+  def buildMintingRequestBox(
+      ctx: BlockchainContext,
+      mintingContractAddress: Address,
+      royalty: Int,
+      tokenName: String,
+      paymentAmount: Long,
+      receiverAddress: Address): OutBox = {
     val expectedRoyalty = ErgoValue.of(royalty)
     val expectedTokenName = ErgoValue.of(tokenName.getBytes)
     val expectedPaymentAmount = ErgoValue.of(paymentAmount)
-    val expectedReceiverAddress = ErgoValue.of(Colls.fromArray(receiverAddress.getErgoAddress.script.bytes), ErgoType.byteType)
+    val expectedReceiverAddress =
+      ErgoValue.of(Colls.fromArray(receiverAddress.getErgoAddress.script.bytes), ErgoType.byteType)
 
     ctx.newTxBuilder.outBoxBuilder
       .value(paymentAmount)
@@ -75,7 +90,8 @@ object ErgoNamesUtils {
     //  We can tweak redrive policy and message delay configs to give a tx enough time to confirm.
     //  If after X minutes of waiting and retrying the box still can be found, we can let the message go to the DLQ to inspect further.
     // this might need to iterate boxes at the contract address if there are a lot of unspent boxes (unprocessed mint requests)
-    val matches: java.util.List[InputBox] = ctx.getUnspentBoxesFor(contractAddress, 0, 20)
+    val matches: java.util.List[InputBox] = ctx
+      .getUnspentBoxesFor(contractAddress, 0, 20)
       .stream()
       .filter(_.getId == ErgoId.create(mintRequestBoxId))
       .collect(Collectors.toList())
@@ -84,9 +100,12 @@ object ErgoNamesUtils {
   }
 
   def issuanceBoxArgs(networkType: NetworkType, value: Long, mintRequestBox: InputBox, tokenDescription: String) = {
-    val R5_tokenNameBytes = mintRequestBox.getRegisters.get(1).getValue.asInstanceOf[CollOverArray[Byte]].toArray
-    val R7_receiverAddressBytes = mintRequestBox.getRegisters.get(3).getValue.asInstanceOf[CollOverArray[Byte]].toArray
-    val deserializedReceiverAddress = ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R7_receiverAddressBytes)
+    val R5_tokenNameBytes =
+      mintRequestBox.getRegisters.get(1).getValue.asInstanceOf[CollOverArray[Byte]].toArray
+    val R7_receiverAddressBytes =
+      mintRequestBox.getRegisters.get(3).getValue.asInstanceOf[CollOverArray[Byte]].toArray
+    val deserializedReceiverAddress =
+      ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R7_receiverAddressBytes)
     val proposedReceiverAddress = Address.fromErgoTree(deserializedReceiverAddress, networkType)
 
     val token = new ErgoToken(mintRequestBox.getId, 1)
@@ -98,13 +117,13 @@ object ErgoNamesUtils {
   }
 
   def buildBoxWithTokenToMint(
-    ctx: BlockchainContext,
-    token: ErgoToken,
-    proposedTokenName: String,
-    proposedTokenDescription: String,
-    tokenDecimals: Int,
-    value: Long,
-    contract: ErgoTreeContract): OutBox = {
+      ctx: BlockchainContext,
+      token: ErgoToken,
+      proposedTokenName: String,
+      proposedTokenDescription: String,
+      tokenDecimals: Int,
+      value: Long,
+      contract: ErgoTreeContract): OutBox = {
 
     ctx.newTxBuilder.outBoxBuilder
       .mintToken(token, proposedTokenName, proposedTokenDescription, tokenDecimals)
@@ -113,8 +132,12 @@ object ErgoNamesUtils {
       .build()
   }
 
-  def buildPaymentCollectionBox(ctx: BlockchainContext, mintingRequestBox: InputBox, ergoNamesP2KAddress: P2PKAddress): OutBox = {
-    val R6_expectedPaymentAmount = mintingRequestBox.getRegisters.get(2).getValue.asInstanceOf[Long]
+  def buildPaymentCollectionBox(
+      ctx: BlockchainContext,
+      mintingRequestBox: InputBox,
+      ergoNamesP2KAddress: P2PKAddress): OutBox = {
+    val R6_expectedPaymentAmount =
+      mintingRequestBox.getRegisters.get(2).getValue.asInstanceOf[Long]
     val collectionAmount = R6_expectedPaymentAmount - Parameters.MinFee
 
     ctx.newTxBuilder.outBoxBuilder
