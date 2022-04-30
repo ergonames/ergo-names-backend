@@ -14,10 +14,10 @@ import org.ergoplatform.ErgoAddressEncoder
 
 import org.scalatest._
 import org.scalatest.Assertions._
-import org.scalatest.{ Matchers, WordSpecLike }
+import org.scalatest.{Matchers, WordSpecLike}
 
 import io.github.dav009.ergopuppet.Simulator._
-import io.github.dav009.ergopuppet.model.{ TokenAmount, TokenInfo }
+import io.github.dav009.ergopuppet.model.{TokenAmount, TokenInfo}
 
 import sigmastate.lang.exceptions.InterpreterException
 
@@ -38,7 +38,8 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     // creates a minting contract address on which requests can be added
     val amountToSpend = Parameters.MinChangeValue + Parameters.MinFee
     val boxes = ergoNames.wallet.getUnspentBoxes(amountToSpend).get
-    val mintingContract = ErgoNamesMintingContract.getContract(ctx, ergoNames.wallet.getAddress.getPublicKey())
+    val mintingContract =
+      ErgoNamesMintingContract.getContract(ctx, ergoNames.wallet.getAddress.getPublicKey())
 
     val mintingContractAddress =
       Address.fromErgoTree(mintingContract.getErgoTree(), NetworkType.TESTNET)
@@ -84,23 +85,14 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       tokenDescription = tokenDesc)
 
     val (goodTx, goodTxArgs) =
-      ProcessMintingRequest.createTx(
-        ctx,
-        ergoNamesUnspentBoxes,
-        ergoNames.wallet.getAddress,
-        mintRequestBox,
-        tokenDesc)
+      ProcessMintingRequest.createTx(ctx, ergoNamesUnspentBoxes, ergoNames.wallet.getAddress, mintRequestBox, tokenDesc)
 
     "entity aside from ergonames should not be able to mint" in {
       val otherBoxes = other.wallet
         .getUnspentBoxes(Parameters.MinFee + Parameters.MinChangeValue + 100000)
         .get
-      val (mintTxshoudFail, _) = ProcessMintingRequest.createTx(
-        ctx,
-        otherBoxes,
-        other.wallet.getAddress,
-        mintRequestBox,
-        tokenDesc)
+      val (mintTxshoudFail, _) = ProcessMintingRequest
+        .createTx(ctx, otherBoxes, other.wallet.getAddress, mintRequestBox, tokenDesc)
       assertThrows[InterpreterException] {
         val signedmintTxshouldFail = other.wallet.sign(mintTxshoudFail)
         ctx.sendTransaction(signedmintTxshouldFail)
@@ -130,9 +122,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     "errors if expected payment amount was not received" in {
       val incorrectPaymentToErgoNames = ctx.newTxBuilder.outBoxBuilder
         .value(paymentAmount - 1)
-        .contract(
-          new ErgoTreeContract(
-            ergoNames.wallet.getAddress.getErgoAddress().script))
+        .contract(new ErgoTreeContract(ergoNames.wallet.getAddress.getErgoAddress().script))
         .build()
 
       val badPaymnetTx = ctx.newTxBuilder
@@ -151,8 +141,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
     "errors if trying to claim the payment box on behalf of ergonames" in {
       val incorrectDestination = ctx.newTxBuilder.outBoxBuilder
         .value(paymentAmount - 1)
-        .contract(
-          new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script))
+        .contract(new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script))
         .build()
 
       val badDestinationTx = ctx.newTxBuilder
@@ -172,8 +161,7 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
       val badNftOwnerBox = ctx.newTxBuilder.outBoxBuilder
         .mintToken(token, tokenName, tokenDesc, 1)
         .value(Parameters.MinChangeValue)
-        .contract(
-          new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script))
+        .contract(new ErgoTreeContract(other.wallet.getAddress.getErgoAddress().script))
         .build()
 
       val badNftOwnerTx = ctx.newTxBuilder
@@ -195,7 +183,8 @@ class SimpleScenarioSpec extends WordSpecLike with Matchers {
 
       // assert nft owners
       val customerTokens = blockchainSim.getUnspentTokensFor(customer.wallet.getAddress)
-      val expectedCustomerTokens = List(new TokenAmount(new TokenInfo(mintRequestBox.getId(), tokenName), 1))
+      val expectedCustomerTokens =
+        List(new TokenAmount(new TokenInfo(mintRequestBox.getId(), tokenName), 1))
       assert(customerTokens == expectedCustomerTokens)
 
       // assert ergoname service assets

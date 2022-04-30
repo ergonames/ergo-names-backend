@@ -4,11 +4,11 @@ import scenarios.ProcessMintingRequest
 import scenarios.ProcessMintingRequest._
 import scenarios.Minter
 
-import org.scalatest.{ PropSpec, Matchers }
+import org.scalatest.{PropSpec, Matchers}
 import org.ergoplatform.ErgoAddressEncoder
 import org.scalatest._
 import org.scalatest.Assertions._
-import org.scalatest.{ Matchers, WordSpecLike }
+import org.scalatest.{Matchers, WordSpecLike}
 import org.scalatest.mockito.MockitoSugar
 
 import org.mockito.Mockito._
@@ -21,13 +21,12 @@ import com.amazonaws.services.lambda.runtime.Context
 
 import play.api.libs.json._
 
-
 import scala.collection.JavaConverters._
 
- class TestableMinter extends Minter
+class TestableMinter extends Minter
 
 class ProcessMintLambdaSpec extends WordSpecLike with Matchers with MockitoSugar {
-/*
+  /*
   "should handle sqs events" in {
 
     // mocking sqs messages
