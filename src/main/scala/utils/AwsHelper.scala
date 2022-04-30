@@ -6,7 +6,8 @@ import com.amazonaws.services.secretsmanager.model.GetSecretValueRequest
 object AwsHelper {
 
   def getSecretFromSecretsManager(secretName: String, region: String): String = {
-    val client = AWSSecretsManagerClientBuilder.standard()
+    val client = AWSSecretsManagerClientBuilder
+      .standard()
       .withRegion(region)
       .build()
 
