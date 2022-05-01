@@ -12,7 +12,7 @@ object SubmitMintingRequest {
     royaltyPercentage: Int,
     tokenName: String,
     paymentAmount: Long,
-    nftReceiverAddress: Address, senderAddress: Address) = {
+    nftReceiverAddress: Address, senderAddress: Address): UnsignedTransaction = {
 
          val mintingRequestBox = ErgoNamesUtils.buildMintingRequestBox(
           ctx,
