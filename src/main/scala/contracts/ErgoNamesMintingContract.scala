@@ -16,7 +16,7 @@ import org.ergoplatform.appkit.config.WalletConfig
  * In practice, a minting request is a box with certain expected values in its registers:
  * R4: Int - Royalty percentage
  * R5: Coll[Byte] - Name of NFT to mint
- * R6: Long - Expected payment amount
+ * R6: Long - Expected payment amount in nanoergs
  * R7: Coll[Byte] - Address of the receiver; should receive an NFT or a refund
 
  * Minting requests are built by a frontend component on behalf of the user, and sent to the contract address.
@@ -63,6 +63,7 @@ object ErgoNamesMintingContract {
           val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == SELF.id
           val proposedTokenIsNonFungible = OUTPUTS(0).tokens(0)._2 == 1
           val proposedTokenSpecsOk = proposedTokenHasSameIdAsFirstTxInput && proposedTokenIsNonFungible
+          // TODO: Check that EIP-4 specific registers are not empty
 
           // Verify the royalty percentage is correct
           val specifiedRoyalty = SELF.R4[Int].get
@@ -74,31 +75,25 @@ object ErgoNamesMintingContract {
           val proposedTokenName = OUTPUTS(0).R4[Coll[Byte]].get
           val tokenNameOk = expectedTokenName == proposedTokenName
 
-          // Verify expected payment amount was received
+          // Verify correct payment amount is being collected
           val expectedPaymentAmount = SELF.R6[Long].get
-          val sentPaymentAmount = SELF.value
-          val receivedPaymentAmountOk = expectedPaymentAmount == sentPaymentAmount
+          val amountBeingCollected = OUTPUTS(1).value
+          val collectedAmountOk = expectedPaymentAmount == amountBeingCollected
+
+          // Verify payment is being sent to the right address
+          val collectedByErgoNames = OUTPUTS(1).propositionBytes == ergoNamesPk.propBytes
+          val paymentDetailsOk = collectedAmountOk && collectedByErgoNames
 
           // Verify that NFT is being sent to the sender of the payment
           val expectedReceiverAddress = SELF.R7[Coll[Byte]].get
           val proposedReceiverAddress = OUTPUTS(0).propositionBytes
           val receiverAddressOk = expectedReceiverAddress == proposedReceiverAddress
 
-          // Verify correct payment amount is being collected
-          val amountToCollect = sentPaymentAmount - 1000000
-          val amountBeingCollected = OUTPUTS(1).value
-          val collectedAmountOk = amountToCollect == amountBeingCollected
-
-          // Verify payment is being sent to the right address
-          val collectedByErgoNames = OUTPUTS(1).propositionBytes == ergoNamesPk.propBytes
-          val paymentDetailsOk = collectedAmountOk && collectedByErgoNames
-
           proposedTokenSpecsOk &&
           royaltyOk &&
           tokenNameOk &&
-          receivedPaymentAmountOk &&
-          receiverAddressOk &&
-          paymentDetailsOk
+          paymentDetailsOk &&
+          receiverAddressOk
         }
 
         // In case of a refund, check that funds are going back to the sender
