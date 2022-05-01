@@ -75,12 +75,24 @@ object ErgoNamesUtils {
     //  We can tweak redrive policy and message delay configs to give a tx enough time to confirm.
     //  If after X minutes of waiting and retrying the box still can be found, we can let the message go to the DLQ to inspect further.
     // this might need to iterate boxes at the contract address if there are a lot of unspent boxes (unprocessed mint requests)
-    val matches: java.util.List[InputBox] = ctx.getUnspentBoxesFor(contractAddress, 0, 20)
-      .stream()
-      .filter(_.getId == ErgoId.create(mintRequestBoxId))
-      .collect(Collectors.toList())
+//    val matches: java.util.List[InputBox] = ctx.getUnspentBoxesFor(contractAddress, 0, 20)
+//      .stream()
+//      .filter(_.getId == ErgoId.create(mintRequestBoxId))
+//      .collect(Collectors.toList())
 
-    matches.get(0)
+    // This throws an ErgoClientException with message 'Cannot load UTXO box $boxId' if the tx that issued the box has not been confirmed.
+    // Consider using this method instead, catching the exception and just raising another with a more detailed message.
+//    Exception in thread "main" org.ergoplatform.appkit.ErgoClientException: Cannot load UTXO box 2da5b5d90bcdc867ba96d629c97f4bed884f17d97d928bcd603f0bb090934b55
+    try {
+      val boxMatch = ctx.getBoxesById(mintRequestBoxId)
+      boxMatch(0)
+    } catch {
+      case e: ErgoClientException =>
+        val exceptionMessage = s"${e.getMessage}. This may mean the tx that issued it has not been confirmed yet. Wait 1 or 2 minutes and try again."
+        throw new Exception(exceptionMessage)
+    }
+
+//    matches.get(0)
   }
 
   def issuanceBoxArgs(networkType: NetworkType, value: Long, mintRequestBox: InputBox, tokenDescription: String) = {
