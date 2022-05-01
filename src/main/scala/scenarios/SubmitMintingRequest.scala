@@ -43,11 +43,11 @@ object SubmitMintingRequest {
         val paymentAmount = conf.getParameters.get("paymentAmount").toLong
         val nftReceiverAddress = Address.create(conf.getParameters.get("nftReceiverAddress"))
 
-    val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
         val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
 
-        val totalToSpend = paymentAmount + Parameters.MinFee
-        val boxesToSpend = ErgoNamesUtils.getBoxesToSpendFromWallet(ctx, totalToSpend)
+        // we are accounting for this tx's fee, the minting tx's fee, AND the min amount of ERG we need to include along with the NFT back to the user
+        val totalToSpend = (paymentAmount + Parameters.MinFee) + (Parameters.MinFee + Parameters.MinChangeValue)
+        val boxesToSpend = ErgoNamesUtils.getUnspentBoxesFromWallet(ctx, totalToSpend)
         if (!boxesToSpend.isPresent)
           throw new ErgoClientException(s"Not enough coins in the wallet to pay $totalToSpend", null)
 
