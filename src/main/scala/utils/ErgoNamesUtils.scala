@@ -2,9 +2,10 @@ package utils
 
 import contracts.ErgoNamesMintingContract
 import org.ergoplatform.{ErgoAddress, P2PKAddress}
-import org.ergoplatform.appkit.config.ErgoNodeConfig
+import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
 import org.ergoplatform.appkit._
-import org.ergoplatform.appkit.impl.ErgoTreeContract
+import org.ergoplatform.appkit.impl.{BlockchainContextBase, ErgoTreeContract, InputBoxImpl}
+import org.ergoplatform.restapi.client.{ApiClient, UtxoApi}
 import sigmastate.basics.DLogProtocol.ProveDlog
 import sigmastate.eval.Colls
 import sigmastate.serialization.ErgoTreeSerializer
@@ -133,5 +134,36 @@ object ErgoNamesUtils {
       .value(collectionAmount)
       .contract(new ErgoTreeContract(ergoNamesP2KAddress.script))
       .build()
+  }
+
+
+  ////////////////
+  def buildNodeService(conf: ErgoToolConfig): UtxoApi = {
+    val nodeClient = new ApiClient(conf.getNode.getNodeApi.getApiUrl, "ApiKeyAuth", conf.getNode.getNodeApi.getApiKey)
+    nodeClient.createService(classOf[UtxoApi])
+  }
+
+  def getUnspentBoxFromMempool(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
+    val response = nodeService.getBoxWithPoolById(boxId).execute()
+    if (!response.isSuccessful)
+      throw new Exception(s"Something went wrong when trying to get box $boxId from mempool. ${response.message()}")
+
+    if (response.body() == null)
+      return null
+
+    val inputBox = new InputBoxImpl(ctx.asInstanceOf[BlockchainContextBase], response.body()).asInstanceOf[InputBox]
+    inputBox
+  }
+
+  def getUnspentBoxFromUtxoSet(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
+    val response = nodeService.getBoxById(boxId).execute()
+    if (!response.isSuccessful)
+      throw new Exception(s"Something went wrong when trying to get box $boxId from utxo set. ${response.message()}")
+
+    if (response.body() == null)
+      return null
+
+    val utxo = new InputBoxImpl(ctx.asInstanceOf[BlockchainContextBase], response.body()).asInstanceOf[InputBox]
+    utxo
   }
 }
