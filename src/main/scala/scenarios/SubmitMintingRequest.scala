@@ -1,5 +1,6 @@
 package scenarios
 
+import contracts.ErgoNamesMintingContract
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import utils.ErgoNamesUtils
@@ -35,11 +36,12 @@ object SubmitMintingRequest {
   def submitMintingRequest(conf: ErgoToolConfig, networkType: NetworkType): String = {
     val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, networkType)
 
-    val mintingContractAddress = Address.create(conf.getParameters.get("mintingContractAddress"))
-    val royaltyPercentage = conf.getParameters.get("royaltyPercentage").toInt
-    val tokenName = conf.getParameters.get("tokenName")
-    val paymentAmount = conf.getParameters.get("paymentAmount").toLong
-    val nftReceiverAddress = Address.create(conf.getParameters.get("nftReceiverAddress"))
+    val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
+        val mintingContractAddress = ErgoNamesMintingContract.getContractAddress(ctx, conf.getNode.getWallet)
+        val royaltyPercentage = conf.getParameters.get("royaltyPercentage").toInt
+        val tokenName = conf.getParameters.get("tokenName")
+        val paymentAmount = conf.getParameters.get("paymentAmount").toLong
+        val nftReceiverAddress = Address.create(conf.getParameters.get("nftReceiverAddress"))
 
     val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
         val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
