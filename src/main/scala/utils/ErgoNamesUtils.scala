@@ -26,10 +26,11 @@ object ErgoNamesUtils {
         SecretString.create(nodeConf.getWallet.getPassword)
       )
       .withEip3Secret(0)
+      .withEip3Secret(1)
       .build()
   }
 
-  def getBoxesToSpendFromWallet(ctx: BlockchainContext, totalToSpend: Long): Optional[java.util.List[InputBox]] = {
+  def getUnspentBoxesFromWallet(ctx: BlockchainContext, totalToSpend: Long): Optional[java.util.List[InputBox]] = {
     val wallet: ErgoWallet = ctx.getWallet
     wallet.getUnspentBoxes(totalToSpend)
   }
@@ -106,6 +107,7 @@ object ErgoNamesUtils {
     val proposedTokenName = new String(R5_tokenNameBytes)
     val proposedTokenDescription = tokenDescription
     val tokenDecimals = 0
+    // issuanceBoxContract
     val contract = new ErgoTreeContract(proposedReceiverAddress.getErgoAddress.script)
     (token, proposedTokenName, proposedTokenDescription, tokenDecimals, value, contract)
   }
