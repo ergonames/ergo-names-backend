@@ -1,3 +1,3 @@
 package models
 
-case class MintRequestSqsMessage(mintTxId: String, mintRequestBoxId: String)
+case class MintRequestSqsMessage(paymentTxId: String, mintRequestBoxId: String)
