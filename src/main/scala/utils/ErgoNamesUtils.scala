@@ -60,7 +60,7 @@ object ErgoNamesUtils {
     val expectedReceiverAddress = ErgoValue.of(Colls.fromArray(receiverAddress.getErgoAddress.script.bytes), ErgoType.byteType)
 
     ctx.newTxBuilder.outBoxBuilder
-      .value(paymentAmount)
+      .value(paymentAmount + Parameters.MinFee + Parameters.MinChangeValue)
       .contract(new ErgoTreeContract(mintingContractAddress.getErgoAddress.script))
       .registers(expectedRoyalty, expectedTokenName, expectedPaymentAmount, expectedReceiverAddress)
       .build()
