@@ -71,7 +71,7 @@ trait Minter {
             println(s"Getting ${Parameters.MinFee} nanoergs from wallet to cover tx fee")
             // TODO: Alternatively, consider including tx fee as part of payment.
             //  This way, we don't need to fetch boxes from the ErgoNames wallet, which would result in one less call to the node.
-            val boxesToCoverTxFees = ErgoNamesUtils.getBoxesToSpendFromWallet(ctx, totalToSpend = Parameters.MinFee)
+            val boxesToCoverTxFees = ErgoNamesUtils.getUnspentBoxesFromWallet(ctx, totalToSpend = Parameters.MinFee)
             if (!boxesToCoverTxFees.isPresent)
               throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
 
@@ -154,7 +154,7 @@ trait Minter {
            // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
            println(s"mint request: $mintRequest")
            if (!dry.toBoolean){
-              println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.mintTxId}")
+              println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.paymentTxId}")
               // ToDo avoid creating an ergo client per message
               // TODO: Update processMintingRequest to take Address instead of String
               val txJson = processMintingRequest(

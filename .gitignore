@@ -12,3 +12,4 @@ project/project/
 
 src/main/scala/SpendBoxAtMintContractAddress/
 src/main/scala/SubmitPaymentForNFT/
+ergo_node_config.json

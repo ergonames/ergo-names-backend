@@ -1,5 +1,6 @@
 package scenarios
 
+import contracts.ErgoNamesMintingContract
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import utils.ErgoNamesUtils
@@ -12,7 +13,7 @@ object SubmitMintingRequest {
     royaltyPercentage: Int,
     tokenName: String,
     paymentAmount: Long,
-    nftReceiverAddress: Address, senderAddress: Address) = {
+    nftReceiverAddress: Address, senderAddress: Address): UnsignedTransaction = {
 
          val mintingRequestBox = ErgoNamesUtils.buildMintingRequestBox(
           ctx,
@@ -35,17 +36,18 @@ object SubmitMintingRequest {
   def submitMintingRequest(conf: ErgoToolConfig, networkType: NetworkType): String = {
     val ergoClient = ErgoNamesUtils.buildErgoClient(conf.getNode, networkType)
 
-    val mintingContractAddress = Address.create(conf.getParameters.get("mintingContractAddress"))
-    val royaltyPercentage = conf.getParameters.get("royaltyPercentage").toInt
-    val tokenName = conf.getParameters.get("tokenName")
-    val paymentAmount = conf.getParameters.get("paymentAmount").toLong
-    val nftReceiverAddress = Address.create(conf.getParameters.get("nftReceiverAddress"))
-
     val txJson: String = ergoClient.execute((ctx: BlockchainContext) => {
+        val mintingContractAddress = ErgoNamesMintingContract.getContractAddress(ctx, conf.getNode.getWallet)
+        val royaltyPercentage = conf.getParameters.get("royaltyPercentage").toInt
+        val tokenName = conf.getParameters.get("tokenName")
+        val paymentAmount = conf.getParameters.get("paymentAmount").toLong
+        val nftReceiverAddress = Address.create(conf.getParameters.get("nftReceiverAddress"))
+
         val senderProver = ErgoNamesUtils.buildProver(ctx, conf.getNode)
 
-        val totalToSpend = paymentAmount + Parameters.MinFee
-        val boxesToSpend = ErgoNamesUtils.getBoxesToSpendFromWallet(ctx, totalToSpend)
+        // we are accounting for this tx's fee, the minting tx's fee, AND the min amount of ERG we need to include along with the NFT back to the user
+        val totalToSpend = (paymentAmount + Parameters.MinFee) + (Parameters.MinFee + Parameters.MinChangeValue)
+        val boxesToSpend = ErgoNamesUtils.getUnspentBoxesFromWallet(ctx, totalToSpend)
         if (!boxesToSpend.isPresent)
           throw new ErgoClientException(s"Not enough coins in the wallet to pay $totalToSpend", null)
 

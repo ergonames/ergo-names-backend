@@ -1,0 +1,24 @@
+{
+    "node": {
+        "nodeApi": {
+            "apiUrl": "",
+            "apiKey": ""
+        },
+        "wallet": {
+            "mnemonic": "",
+            "password": "",
+            "mnemonicPassword": ""
+        },
+        "networkType": "TESTNET"
+    },
+    "parameters": {
+        "addressIndex": 0,
+        "mintRequestBoxId": "",
+        "nftReceiverAddress": "",
+        "tokenName": "",
+        "tokenDescription": "",
+        "tokenDecimals": 0,
+        "paymentAmount": 2500000,
+        "royaltyPercentage": 20
+    }
+}
