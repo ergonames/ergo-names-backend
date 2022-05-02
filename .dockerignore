@@ -41,3 +41,5 @@ null/
 ### Others ###
 tmp/
 scripts/graal/sdk/
+ergo_node_config.json
+ergo_node_config.template.json
