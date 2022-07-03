@@ -15,7 +15,7 @@ import org.ergoplatform.appkit.config.WalletConfig
  * It contains information like: what was ordered, who ordered it, and how much they paid for it (potentially also who took or processed the order).
  * In practice, a minting request is a box with certain expected values in its registers:
  * R4: Int - Royalty percentage
- * R5: Coll[Byte] - Name of NFT to mint
+ * R5: Coll[Byte] - Name of Ergo Name NFT to mint
  * R6: Long - Expected payment amount in nanoergs
  * R7: Coll[Byte] - Address of the receiver; should receive an NFT or a refund
 

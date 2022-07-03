@@ -17,7 +17,7 @@ class MintingHandler {
   implicit val mintRequestSqsMessageWrites: OWrites[MintRequestSqsMessage] = Json.writes[MintRequestSqsMessage]
 
   def handle(sqsEvent: SQSEvent, context: Context): Unit = {
-    // TODO: Build logger
+    // TODO: Build logger. Probably using some general utility.
     val awsRegion = AwsHelper.getRegion
     if (awsRegion == null)
       throw new Exception("Did not find 'awsRegion' in environment variables or in local config file")
@@ -32,7 +32,7 @@ class MintingHandler {
 
     val queueUrl = ConfigManager.get("mintRequestsQueueUrl")
     if (queueUrl == null)
-      throw new Exception("Could not find config value 'mintRequestsQueue'")
+      throw new Exception("Did not find 'mintRequestsQueue' in environment variables or in local config file")
 
     val sqsClient = AwsHelper.getSqsClient(awsRegion)
     val sqsMessages = sqsEvent.getRecords.asScala
@@ -42,11 +42,12 @@ class MintingHandler {
     }
 
     val dry = ConfigManager.get("dry")
-    if (dry == null) throw new Exception("Could not find config flag 'dry'")
+    if (dry == null)
+      throw new Exception("Could not find config flag 'dry'")
     val dryMsg = if (dry.toBoolean)
                     "Running in dry mode - will not process mint request or attempt to query node"
                  else
-                    "NOT Running in dry mode - will attempt to process minting request and query node"
+                    "NOT running in dry mode - will attempt to process minting request and query node"
 
     val minter = new Minter()
     val txIds = ergoClient.execute((ctx: BlockchainContext) => {

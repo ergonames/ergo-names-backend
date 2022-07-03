@@ -17,17 +17,23 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val mintRequestInBox = getMintRequestBox(ctx, nodeService, boxId)
 
     // BUILD OUTPUTS
-    val nft = buildNft(mintRequestInBox.getId.toString)
-    val mintRequestArgs = extractArgsFromMintRequestBox(mintRequestInBox, ctx.getNetworkType)
-    // TODO: Generate asset type, image hash and url here
-    val eip4CompliantRegisters = buildEIP4CompliantRegisters(mintRequestArgs.tokenName, "token description", 0, "assetType", "imageHash", "imageUrl")
-
     val txFee = Parameters.MinFee
-    val issuanceBoxValue = Parameters.MinChangeValue
-    val paymentBoxValue = mintRequestInBox.getValue - txFee - issuanceBoxValue
+    val nftIssuanceBoxValue = Parameters.MinChangeValue
+    val paymentCollectionBoxValue = mintRequestInBox.getValue - txFee - nftIssuanceOutBoxValue
 
-    val nftIssuanceOutBox = buildNftIssuanceOutBox(ctx, issuanceBoxValue, mintRequestArgs, nft, eip4CompliantRegisters)
-    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentBoxValue, prover.getAddress)
+    // OUTPUT 1
+    val nftIssuanceOutBox = {
+      val nft = buildNft(mintRequestInBox.getId.toString)
+      val mintRequestArgs = extractArgsFromMintRequestBox(mintRequestInBox, ctx.getNetworkType)
+      // TODO: Get standard token description from config or something
+      // TODO: Generate asset type, image hash and url
+      val eip4CompliantRegisters = buildEIP4CompliantRegisters(mintRequestArgs.tokenName, "token description", 0, "assetType", "imageHash", "imageUrl")
+
+      buildNftIssuanceOutBox(ctx, nftIssuanceBoxValue, mintRequestArgs, nft, eip4CompliantRegisters)
+    }
+
+    // OUTPUT 2
+    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getAddress)
 
     // BUILD UNSIGNED TX
     val inputs = List(mintRequestInBox)
@@ -44,7 +50,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     //   getFromMempool, if null getFromOnChainUtxoSet
     val mempoolBox = ErgoNamesUtils.getUnspentBoxFromMempool(ctx, nodeService, boxId)
     if (mempoolBox != null)
-      return  mempoolBox
+      return mempoolBox
 
     val utxo = ErgoNamesUtils.getUnspentBoxFromUtxoSet(ctx, nodeService, boxId)
     utxo
