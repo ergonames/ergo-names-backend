@@ -1,6 +1,7 @@
 {
+    "name": "Scala",
+	"image": "meisamf/gitpod-scala:scala3.2.1-openjdk17-bullseye",
     "extensions": [
-        "scala-lang.scala",
         "scalameta.metals"       
     ]
 }
