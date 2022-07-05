@@ -1,0 +1,6 @@
+{
+    "extensions": [
+        "scala-lang.scala",
+        "scalameta.metals"       
+    ]
+}
