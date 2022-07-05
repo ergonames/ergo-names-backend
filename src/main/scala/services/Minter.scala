@@ -19,7 +19,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     // BUILD OUTPUTS
     val txFee = Parameters.MinFee
     val nftIssuanceBoxValue = Parameters.MinChangeValue
-    val paymentCollectionBoxValue = mintRequestInBox.getValue - txFee - nftIssuanceOutBoxValue
+    val paymentCollectionBoxValue = mintRequestInBox.getValue - txFee - nftIssuanceBoxValue
 
     // OUTPUT 1
     val nftIssuanceOutBox = {
