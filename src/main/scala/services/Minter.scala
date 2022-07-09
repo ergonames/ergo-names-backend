@@ -23,11 +23,12 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
 
     // OUTPUT 1
     val nftIssuanceOutBox = {
-      val nft = buildNft(mintRequestInBox.getId.toString)
-      val mintRequestArgs = extractArgsFromMintRequestBox(mintRequestInBox, ctx.getNetworkType)
       // TODO: Get standard token description from config or something
       // TODO: Generate asset type, image hash and url
+      val mintRequestArgs = extractArgsFromMintRequestBox(mintRequestInBox, ctx.getNetworkType)
       val eip4CompliantRegisters = buildEIP4CompliantRegisters(mintRequestArgs.tokenName, "token description", 0, "assetType", "imageHash", "imageUrl")
+      // TODO: Figure out how to pass R4-R9 and use them properly inside this method
+      val nft = buildNft(mintRequestInBox.getId.toString, mintRequestArgs.tokenName)
 
       buildNftIssuanceOutBox(ctx, nftIssuanceBoxValue, mintRequestArgs, nft, eip4CompliantRegisters)
     }
@@ -56,9 +57,10 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     utxo
   }
 
-  def buildNft(boxId: String): ErgoToken = {
+  def buildNft(boxId: String, tokenName: String): Eip4Token = {
     // Because it's an NFT, the amount must be 1
-    new ErgoToken(boxId, 1)
+//    new ErgoToken(boxId, 1)
+      new Eip4Token(boxId, 1, tokenName, "description TBD", 0)
   }
 
   def extractArgsFromMintRequestBox(mintRequestBox: InputBox, networkType: NetworkType): MintRequestArgs = {
@@ -85,20 +87,20 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     List(R7_assetType, R8_imageHash, R9_imageUrl)
   }
 
-  def buildNftIssuanceOutBox(ctx: BlockchainContext, boxValue: Long, mintRequestArgs: MintRequestArgs, nft: ErgoToken, eip4CompliantRegisters: List[ErgoValue[_]]): OutBox = {
+  def buildNftIssuanceOutBox(ctx: BlockchainContext, boxValue: Long, mintRequestArgs: MintRequestArgs, nft: Eip4Token, eip4CompliantRegisters: List[ErgoValue[_]]): OutBox = {
     // TODO: Make this box FULLY EIP-4 compliant
     ctx.newTxBuilder.outBoxBuilder
       .value(boxValue)
-      .contract(new ErgoTreeContract(mintRequestArgs.receiverAddress.getErgoAddress.script))
+      .contract(new ErgoTreeContract(mintRequestArgs.receiverAddress.getErgoAddress.script, ctx.getNetworkType))
       // TODO: Pull token description and number of decimals from config
       // TODO: Check what happens if you set tokenName to empty string here, but specify it in registers
-      .mintToken(nft, mintRequestArgs.tokenName, "", 0)
+      .mintToken(nft)
       .registers(eip4CompliantRegisters:_*)
       .build()
   }
 
   def buildPaymentCollectionOutBox(ctx: BlockchainContext, expectedPaymentAmount: Long, paymentCollectionAddress: Address): OutBox = {
-    val contract = new ErgoTreeContract(paymentCollectionAddress.getErgoAddress.script)
+    val contract = new ErgoTreeContract(paymentCollectionAddress.getErgoAddress.script, ctx.getNetworkType)
 
     ctx.newTxBuilder.outBoxBuilder
       .value(expectedPaymentAmount)

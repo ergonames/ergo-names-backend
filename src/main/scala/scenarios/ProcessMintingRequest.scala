@@ -30,9 +30,7 @@ trait Minter {
             tokenDescription = ergoNamesStandardTokenDescription)
 
           println("Building issuance box")
-          val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(ctx,
-            token, tokenName, tokenDesc,
-            tokenDecimals, ergValue, contract)
+          val issuanceBox = ErgoNamesUtils.buildBoxWithTokenToMint(ctx, token, ergValue, contract)
 
           println("Building payment collection box")
           val paymentCollectionBox = ErgoNamesUtils.buildPaymentCollectionBox(

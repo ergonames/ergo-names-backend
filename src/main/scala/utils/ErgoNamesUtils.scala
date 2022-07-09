@@ -63,7 +63,7 @@ object ErgoNamesUtils {
 
     ctx.newTxBuilder.outBoxBuilder
       .value(paymentAmount + Parameters.MinFee + Parameters.MinChangeValue)
-      .contract(new ErgoTreeContract(mintingContractAddress.getErgoAddress.script))
+      .contract(new ErgoTreeContract(mintingContractAddress.getErgoAddress.script, ctx.getNetworkType))
       .registers(expectedRoyalty, expectedTokenName, expectedPaymentAmount, expectedReceiverAddress)
       .build()
   }
@@ -103,26 +103,23 @@ object ErgoNamesUtils {
     val deserializedReceiverAddress = ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R7_receiverAddressBytes)
     val proposedReceiverAddress = Address.fromErgoTree(deserializedReceiverAddress, networkType)
 
-    val token = new ErgoToken(mintRequestBox.getId, 1)
     val proposedTokenName = new String(R5_tokenNameBytes)
     val proposedTokenDescription = tokenDescription
     val tokenDecimals = 0
+    val token = new Eip4Token(mintRequestBox.getId.toString, 1, proposedTokenName, proposedTokenDescription, tokenDecimals)
     // issuanceBoxContract
-    val contract = new ErgoTreeContract(proposedReceiverAddress.getErgoAddress.script)
+    val contract = new ErgoTreeContract(proposedReceiverAddress.getErgoAddress.script, networkType)
     (token, proposedTokenName, proposedTokenDescription, tokenDecimals, value, contract)
   }
 
   def buildBoxWithTokenToMint(
     ctx: BlockchainContext,
-    token: ErgoToken,
-    proposedTokenName: String,
-    proposedTokenDescription: String,
-    tokenDecimals: Int,
+    token: Eip4Token,
     value: Long,
     contract: ErgoTreeContract): OutBox = {
 
     ctx.newTxBuilder.outBoxBuilder
-      .mintToken(token, proposedTokenName, proposedTokenDescription, tokenDecimals)
+      .mintToken(token)
       .value(value)
       .contract(contract)
       .build()
@@ -134,7 +131,7 @@ object ErgoNamesUtils {
 
     ctx.newTxBuilder.outBoxBuilder
       .value(collectionAmount)
-      .contract(new ErgoTreeContract(ergoNamesP2KAddress.script))
+      .contract(new ErgoTreeContract(ergoNamesP2KAddress.script, ctx.getNetworkType))
       .build()
   }
 

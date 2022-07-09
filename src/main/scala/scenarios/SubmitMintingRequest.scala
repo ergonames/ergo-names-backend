@@ -51,7 +51,7 @@ object SubmitMintingRequest {
         if (!boxesToSpend.isPresent)
           throw new ErgoClientException(s"Not enough coins in the wallet to pay $totalToSpend", null)
 
-      val tx = createTx(ctx, boxesToSpend.get, mintingContractAddress, royaltyPercentage, tokenName, paymentAmount, nftReceiverAddress, senderProver.getAddress())
+        val tx = createTx(ctx, boxesToSpend.get, mintingContractAddress, royaltyPercentage, tokenName, paymentAmount, nftReceiverAddress, senderProver.getAddress())
 
         val signedTx = senderProver.sign(tx)
         val txId = ctx.sendTransaction(signedTx)
