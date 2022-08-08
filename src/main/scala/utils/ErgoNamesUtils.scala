@@ -1,18 +1,18 @@
 package utils
 
 import contracts.ErgoNamesMintingContract
-import org.ergoplatform.{ErgoAddress, P2PKAddress}
-import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
+import models.AppKitWorkaround.NewBoxesRequestHolder
 import org.ergoplatform.appkit._
-import org.ergoplatform.appkit.impl.{BlockchainContextBase, ErgoTreeContract, InputBoxImpl}
-import org.ergoplatform.restapi.client.{ApiClient, UtxoApi}
+import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
+import org.ergoplatform.appkit.impl.{ErgoTreeContract, InputBoxImpl}
+import org.ergoplatform.restapi.client.{ApiClient, UtxoApi, WalletApi}
+import org.ergoplatform.{ErgoAddress, P2PKAddress}
+import services.AppKitWorkaround.NewWalletApi
 import sigmastate.basics.DLogProtocol.ProveDlog
-import sigmastate.eval.Colls
 import sigmastate.serialization.ErgoTreeSerializer
 import special.collection.CollOverArray
 
-import java.util.Optional
-import java.util.stream.Collectors
+import scala.collection.JavaConverters._
 
 object ErgoNamesUtils {
   def buildErgoClient(nodeConf: ErgoNodeConfig, networkType: NetworkType): ErgoClient = {
@@ -30,9 +30,28 @@ object ErgoNamesUtils {
       .build()
   }
 
-  def getUnspentBoxesFromWallet(ctx: BlockchainContext, totalToSpend: Long): Optional[java.util.List[InputBox]] = {
-    val wallet: ErgoWallet = ctx.getWallet
-    wallet.getUnspentBoxes(totalToSpend)
+  def getUnspentBoxesFromWallet(conf: ErgoToolConfig, totalToSpend: Long): java.util.List[InputBox] = {
+    val walletService = buildNewWalletApiService(conf)
+
+    val getWalletBoxesRequest = new NewBoxesRequestHolder()
+      .targetBalance(totalToSpend)
+      // targetAssets cannot be empty or node API will reject request
+      .targetAssets(new java.util.HashMap[String, java.lang.Long]())
+    val response = walletService.walletBoxesCollect(getWalletBoxesRequest).execute()
+
+    if (!response.isSuccessful)
+      throw new Exception(s"Something went wrong when trying to get boxes from wallet for a total amount of $totalToSpend. ${response.message()}")
+
+    if (response.body() == null)
+      throw new Exception(s"Not enough boxes in wallet to cover balance of $totalToSpend")
+
+    val walletBoxes = response.body()
+      .getBoxes
+      .asScala
+      .map(output => new InputBoxImpl(output).asInstanceOf[InputBox])
+      .asJava
+
+    walletBoxes
   }
 
   def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
@@ -59,7 +78,7 @@ object ErgoNamesUtils {
     val expectedRoyalty = ErgoValue.of(royalty)
     val expectedTokenName = ErgoValue.of(tokenName.getBytes)
     val expectedPaymentAmount = ErgoValue.of(paymentAmount)
-    val expectedReceiverAddress = ErgoValue.of(Colls.fromArray(receiverAddress.getErgoAddress.script.bytes), ErgoType.byteType)
+    val expectedReceiverAddress = ErgoValue.of(receiverAddress.getErgoAddress.script.bytes)
 
     ctx.newTxBuilder.outBoxBuilder
       .value(paymentAmount + Parameters.MinFee + Parameters.MinChangeValue)
@@ -142,6 +161,16 @@ object ErgoNamesUtils {
     nodeClient.createService(classOf[UtxoApi])
   }
 
+  def buildWalletApiService(conf: ErgoToolConfig): WalletApi = {
+    val walletService = new ApiClient(conf.getNode.getNodeApi.getApiUrl, "ApiKeyAuth", conf.getNode.getNodeApi.getApiKey)
+    walletService.createService(classOf[WalletApi])
+  }
+
+  def buildNewWalletApiService(conf: ErgoToolConfig): NewWalletApi = {
+    val walletService = new ApiClient(conf.getNode.getNodeApi.getApiUrl, "ApiKeyAuth", conf.getNode.getNodeApi.getApiKey)
+    walletService.createService(classOf[NewWalletApi])
+  }
+
   def getUnspentBoxFromMempool(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
     val response = nodeService.getBoxWithPoolById(boxId).execute()
     if (!response.isSuccessful)
@@ -150,7 +179,7 @@ object ErgoNamesUtils {
     if (response.body() == null)
       return null
 
-    val inputBox = new InputBoxImpl(ctx.asInstanceOf[BlockchainContextBase], response.body()).asInstanceOf[InputBox]
+    val inputBox = new InputBoxImpl(response.body()).asInstanceOf[InputBox]
     inputBox
   }
 
@@ -162,7 +191,7 @@ object ErgoNamesUtils {
     if (response.body() == null)
       return null
 
-    val utxo = new InputBoxImpl(ctx.asInstanceOf[BlockchainContextBase], response.body()).asInstanceOf[InputBox]
+    val utxo = new InputBoxImpl(response.body()).asInstanceOf[InputBox]
     utxo
   }
 }

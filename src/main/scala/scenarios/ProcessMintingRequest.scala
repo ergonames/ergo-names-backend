@@ -38,7 +38,7 @@ trait Minter {
             mintRequestBox,
             senderAddress.asP2PK())
 
-          val inputsWithMintBox =  List(mintRequestBox) ++ (boxesToCoverTxFees).asScala
+          val inputsWithMintBox = List(mintRequestBox) ++ (boxesToCoverTxFees).asScala
 
           println("Building minting tx")
           val tx = ctx.newTxBuilder
@@ -69,12 +69,10 @@ trait Minter {
             println(s"Getting ${Parameters.MinFee} nanoergs from wallet to cover tx fee")
             // TODO: Alternatively, consider including tx fee as part of payment.
             //  This way, we don't need to fetch boxes from the ErgoNames wallet, which would result in one less call to the node.
-            val boxesToCoverTxFees = ErgoNamesUtils.getUnspentBoxesFromWallet(ctx, totalToSpend = Parameters.MinFee)
-            if (!boxesToCoverTxFees.isPresent)
-              throw new ErgoClientException(s"Not enough coins in the wallet to pay ${Parameters.MinFee}", null)
+            val boxesToCoverTxFees = ErgoNamesUtils.getUnspentBoxesFromWallet(conf, totalToSpend = Parameters.MinFee)
 
             // TODO: Consider passing concatenated inputs to createTx. Would reduce number of params AND wouldnt need to concat them again later
-            val (tx, _) = createTx(ctx, boxesToCoverTxFees.get, senderProver.getAddress, mintRequestBox, ergoNamesStandardTokenDescription)
+            val (tx, _) = createTx(ctx, boxesToCoverTxFees, senderProver.getAddress, mintRequestBox, ergoNamesStandardTokenDescription)
 
             println("Signing minting tx")
             val signedTx = senderProver.sign(tx)
