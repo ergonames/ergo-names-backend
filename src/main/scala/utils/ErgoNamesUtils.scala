@@ -13,6 +13,7 @@ import sigmastate.serialization.ErgoTreeSerializer
 import special.collection.CollOverArray
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
 
 object ErgoNamesUtils {
   def buildErgoClient(nodeConf: ErgoNodeConfig, networkType: NetworkType): ErgoClient = {
@@ -49,9 +50,18 @@ object ErgoNamesUtils {
       .getBoxes
       .asScala
       .map(output => new InputBoxImpl(output).asInstanceOf[InputBox])
-      .asJava
 
-    walletBoxes
+    var valueCounter: Long = 0
+    val justEnoughBoxes = ListBuffer[InputBox]()
+
+    walletBoxes.foreach(inputBox => {
+      if (valueCounter < totalToSpend) {
+        justEnoughBoxes += inputBox
+        valueCounter += inputBox.getValue
+      }
+    })
+
+    justEnoughBoxes.toList.asJava
   }
 
   def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
