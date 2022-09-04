@@ -7,13 +7,15 @@ import utils.ErgoNamesUtils
 
 object SubmitMintingRequest {
 
-  def createTx(ctx: BlockchainContext,
+  def createTx(
+    ctx: BlockchainContext,
     boxesToSpend:  java.util.List[InputBox],
     mintingContractAddress: Address,
     royaltyPercentage: Int,
     tokenName: String,
     paymentAmount: Long,
-    nftReceiverAddress: Address, senderAddress: Address): UnsignedTransaction = {
+    nftReceiverAddress: Address,
+    senderAddress: Address): UnsignedTransaction = {
 
          val mintingRequestBox = ErgoNamesUtils.buildMintingRequestBox(
           ctx,
@@ -49,7 +51,7 @@ object SubmitMintingRequest {
         val totalToSpend = (paymentAmount + Parameters.MinFee) + (Parameters.MinFee + Parameters.MinChangeValue)
         val boxesToSpend = ErgoNamesUtils.getUnspentBoxesFromWallet(conf, totalToSpend)
 
-        val tx = createTx(ctx, boxesToSpend, mintingContractAddress, royaltyPercentage, tokenName, paymentAmount, nftReceiverAddress, senderProver.getAddress())
+        val tx = createTx(ctx, boxesToSpend, mintingContractAddress, royaltyPercentage, tokenName, paymentAmount, nftReceiverAddress, senderProver.getEip3Addresses.get(0))
 
         val signedTx = senderProver.sign(tx)
         val txId = ctx.sendTransaction(signedTx)

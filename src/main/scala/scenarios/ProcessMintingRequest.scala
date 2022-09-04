@@ -4,7 +4,7 @@ package scenarios
 import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import com.amazonaws.services.sqs.{AmazonSQS, AmazonSQSClientBuilder}
-import models.{MintRequestSqsMessage, MintingTxArgs}
+import models.{MintingRequestSqsMessage, MintingTxArgs}
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import play.api.libs.json._
@@ -14,8 +14,8 @@ import java.io.StringReader
 import scala.collection.JavaConverters._
 
 trait Minter {
-  implicit val mintRequestSqsMessageReads: Reads[MintRequestSqsMessage] = Json.reads[MintRequestSqsMessage]
-  implicit val mintRequestSqsMessageWrites: OWrites[MintRequestSqsMessage] = Json.writes[MintRequestSqsMessage]
+  implicit val mintRequestSqsMessageReads: Reads[MintingRequestSqsMessage] = Json.reads[MintingRequestSqsMessage]
+  implicit val mintRequestSqsMessageWrites: OWrites[MintingRequestSqsMessage] = Json.writes[MintingRequestSqsMessage]
 
   def createTx(ctx: BlockchainContext,
                boxesToCoverTxFees: java.util.List[InputBox],
@@ -134,7 +134,7 @@ trait Minter {
         println(s"Pulled ${sqsMessages.length} message(s) from queue")
         println("Extracting and parsing mint request(s) from SQS message(s)")
         val mintRequests = sqsMessages.map{ m =>
-          val parsed = Json.parse(m.getBody).as[MintRequestSqsMessage]
+          val parsed = Json.parse(m.getBody).as[MintingRequestSqsMessage]
           (m, parsed)
         }
 
@@ -150,13 +150,13 @@ trait Minter {
            // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
            println(s"mint request: $mintRequest")
            if (!dry.toBoolean){
-              println(s"Attempting to process mint request box ${mintRequest.mintRequestBoxId} issued by mint tx ${mintRequest.paymentTxId}")
+              println(s"Attempting to process mint request box ${mintRequest.mintingRequestBoxId} issued by mint tx ${mintRequest.paymentTxId}")
               // ToDo avoid creating an ergo client per message
               // TODO: Update processMintingRequest to take Address instead of String
               val txJson = processMintingRequest(
                 ergoNodeConfig,
                 mintingContractAddress,
-                mintRequest.mintRequestBoxId,
+                mintRequest.mintingRequestBoxId,
                 ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
 
               println("Successfully submitted minting tx to node")
