@@ -2,7 +2,7 @@ package handlers
 
 import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
-import models.MintRequestSqsMessage
+import models.MintingRequestSqsMessage
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import play.api.libs.json.{Json, OWrites, Reads}
@@ -13,8 +13,8 @@ import java.io.StringReader
 import scala.collection.JavaConverters._
 
 class MintingHandler {
-  implicit val mintRequestSqsMessageReads: Reads[MintRequestSqsMessage] = Json.reads[MintRequestSqsMessage]
-  implicit val mintRequestSqsMessageWrites: OWrites[MintRequestSqsMessage] = Json.writes[MintRequestSqsMessage]
+  implicit val mintRequestSqsMessageReads: Reads[MintingRequestSqsMessage] = Json.reads[MintingRequestSqsMessage]
+  implicit val mintRequestSqsMessageWrites: OWrites[MintingRequestSqsMessage] = Json.writes[MintingRequestSqsMessage]
 
   def handle(sqsEvent: SQSEvent, context: Context): Unit = {
     // TODO: Build logger. Probably using some general utility.
@@ -37,7 +37,7 @@ class MintingHandler {
     val sqsClient = AwsHelper.getSqsClient(awsRegion)
     val sqsMessages = sqsEvent.getRecords.asScala
     val mintRequests = sqsMessages.map{ rawMessage =>
-      val parsedMessage = Json.parse(rawMessage.getBody).as[MintRequestSqsMessage]
+      val parsedMessage = Json.parse(rawMessage.getBody).as[MintingRequestSqsMessage]
       (rawMessage, parsedMessage)
     }
 
@@ -57,7 +57,7 @@ class MintingHandler {
       mintRequests.map{
         case (rawMessage, mintRequest) =>
           // TODO: Account for failures
-          val txId = minter.mint(mintRequest.mintRequestBoxId, ctx, prover, nodeService)
+          val txId = minter.mint(mintRequest.mintingRequestBoxId, ctx, prover, nodeService)
           sqsClient.deleteMessage(queueUrl, rawMessage.getReceiptHandle)
           txId
       }.toList
