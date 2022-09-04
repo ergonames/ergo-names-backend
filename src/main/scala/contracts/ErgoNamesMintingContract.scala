@@ -53,8 +53,6 @@ object ErgoNamesMintingContract {
   def getScript: String = {
     val script: String = s"""
       {
-        // 2% per EIP24 standard format; could potentially be a data input
-        val royaltyPercentage = 20
         val txFee = 1000000
 
         // Verify all the requirements for minting the NFT are met
@@ -67,10 +65,10 @@ object ErgoNamesMintingContract {
 
           // Verify the royalty percentage is correct
           val specifiedRoyalty = SELF.R4[Int].get
-          val expectedRoyalty = 20
+          val expectedRoyalty = 20 // could be a data input
           val royaltyOk = specifiedRoyalty == expectedRoyalty
 
-          // Verify name of token being issued is what was requested
+          // Verify name of token being issued is correct
           val expectedTokenName = SELF.R5[Coll[Byte]].get
           val proposedTokenName = OUTPUTS(0).R4[Coll[Byte]].get
           val tokenNameOk = expectedTokenName == proposedTokenName
@@ -82,9 +80,9 @@ object ErgoNamesMintingContract {
 
           // Verify payment is being sent to the right address
           val collectedByErgoNames = OUTPUTS(1).propositionBytes == ergoNamesPk.propBytes
-          val paymentDetailsOk = collectedAmountOk && collectedByErgoNames
+          val paymentCollectionDetailsOk = collectedAmountOk && collectedByErgoNames
 
-          // Verify that NFT is being sent to the sender of the payment
+          // Verify that NFT is being sent back to the user
           val expectedReceiverAddress = SELF.R7[Coll[Byte]].get
           val proposedReceiverAddress = OUTPUTS(0).propositionBytes
           val receiverAddressOk = expectedReceiverAddress == proposedReceiverAddress
@@ -92,7 +90,7 @@ object ErgoNamesMintingContract {
           proposedTokenSpecsOk &&
           royaltyOk &&
           tokenNameOk &&
-          paymentDetailsOk &&
+          paymentCollectionDetailsOk &&
           receiverAddressOk
         }
 
