@@ -83,8 +83,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val R8_imageHash = ErgoValue.of(imageHash.getBytes())
     val R9_imageUrl = ErgoValue.of(imageUrl.getBytes())
 
-//    List(R4_tokenName, R5_tokenDescription, R6_tokenDecimals, R7_assetType, R8_imageHash, R9_imageUrl)
-    List(R7_assetType, R8_imageHash, R9_imageUrl)
+    List(R4_tokenName, R5_tokenDescription, R6_tokenDecimals, R7_assetType, R8_imageHash, R9_imageUrl)
   }
 
   def buildNftIssuanceOutBox(ctx: BlockchainContext, boxValue: Long, mintRequestArgs: MintRequestArgs, nft: Eip4Token, eip4CompliantRegisters: List[ErgoValue[_]]): OutBox = {
