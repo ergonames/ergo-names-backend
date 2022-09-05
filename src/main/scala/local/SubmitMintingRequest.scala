@@ -5,7 +5,7 @@ import org.ergoplatform.appkit.config.ErgoToolConfig
 import services.MintingRequestService
 import utils.ErgoNamesUtils
 
-object SubmitMintingRequestLatest {
+object SubmitMintingRequest {
   def main(args: Array[String]): Unit = {
     val ergoConfig = ErgoToolConfig.load("ergo_node_config.json")
     val ergoClient = ErgoNamesUtils.buildErgoClient(ergoConfig.getNode, ergoConfig.getNode.getNetworkType)
