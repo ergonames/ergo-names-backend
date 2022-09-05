@@ -146,17 +146,17 @@ trait Minter {
         println(dryMsg)
 
         mintRequests.foreach{
-         case (message, mintRequest) =>
+         case (message, mintingRequest) =>
            // ToDo handle failures here so that a single request failure does not taint the entire batch of sqs messages
-           println(s"mint request: $mintRequest")
+           println(s"minting request: $mintingRequest")
            if (!dry.toBoolean){
-              println(s"Attempting to process mint request box ${mintRequest.mintingRequestBoxId} issued by mint tx ${mintRequest.paymentTxId}")
+              println(s"Attempting to process minting request box ${mintingRequest.mintingRequestBoxId} issued by tx ${mintingRequest.paymentTxId}")
               // ToDo avoid creating an ergo client per message
               // TODO: Update processMintingRequest to take Address instead of String
               val txJson = processMintingRequest(
                 ergoNodeConfig,
                 mintingContractAddress,
-                mintRequest.mintingRequestBoxId,
+                mintingRequest.mintingRequestBoxId,
                 ergoNodeConfig.getParameters.get("ergoNamesTokenDescription"))
 
               println("Successfully submitted minting tx to node")
