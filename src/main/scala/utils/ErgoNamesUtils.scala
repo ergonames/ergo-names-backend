@@ -33,9 +33,7 @@ object ErgoNamesUtils {
       .build()
   }
 
-  def getUnspentBoxesFromWallet(conf: ErgoToolConfig, totalToSpend: Long): java.util.List[InputBox] = {
-    val walletService = buildNewWalletApiService(conf)
-
+  def getUnspentBoxesFromWallet(walletService: NewWalletApi, totalToSpend: Long): java.util.List[InputBox] = {
     val getWalletBoxesRequest = new NewBoxesRequestHolder()
       .targetBalance(totalToSpend)
       // targetAssets cannot be empty or node API will reject request

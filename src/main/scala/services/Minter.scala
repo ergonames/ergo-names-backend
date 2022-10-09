@@ -4,20 +4,20 @@ import models.MintRequestArgs
 import org.apache.commons.codec.digest.DigestUtils
 import org.ergoplatform.ErgoAddress
 import org.ergoplatform.appkit._
-import org.ergoplatform.appkit.config.ErgoToolConfig
 import org.ergoplatform.appkit.impl.{Eip4TokenBuilder, ErgoTreeContract}
 import org.ergoplatform.restapi.client.UtxoApi
+import services.AppKitWorkaround.NewWalletApi
 import sigmastate.serialization.ErgoTreeSerializer
 import special.collection.CollOverArray
-import utils.{ConfigManager, ErgoNamesUtils}
+import utils.ErgoNamesUtils
 
 import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 
 class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
-  def mint(boxId: String, ctx: BlockchainContext, prover: ErgoProver, nodeService: UtxoApi, ergoConfig: ErgoToolConfig): String = {
+  def mint(boxId: String, ctx: BlockchainContext, prover: ErgoProver, nodeService: UtxoApi, walletService: NewWalletApi): String = {
     // GET INPUT(S)
-    val ergoNamesInBox = ErgoNamesUtils.getUnspentBoxesFromWallet(ergoConfig, Parameters.MinChangeValue).get(0)
+    val ergoNamesInBox = ErgoNamesUtils.getUnspentBoxesFromWallet(walletService, Parameters.MinChangeValue).get(0)
     val mintRequestInBox = getMintRequestBox(ctx, nodeService, boxId)
 
     // BUILD OUTPUTS

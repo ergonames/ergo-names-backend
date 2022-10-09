@@ -38,7 +38,8 @@ class MintingRequestService {
     val inputs = {
       // we are accounting for this tx's fee, the minting tx's fee, AND the min amount of ERG we need to include along with the NFT back to the user
       val totalToSpend = (paymentAmount + Parameters.MinFee) + (Parameters.MinFee + Parameters.MinChangeValue)
-      val boxes = ErgoNamesUtils.getUnspentBoxesFromWallet(ergoConfig, totalToSpend).asScala.toList
+      val walletService = ErgoNamesUtils.buildNewWalletApiService(ergoConfig)
+      val boxes = ErgoNamesUtils.getUnspentBoxesFromWallet(walletService, totalToSpend).asScala.toList
       boxes
     }
 
