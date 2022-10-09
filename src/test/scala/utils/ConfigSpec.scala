@@ -1,10 +1,9 @@
 package utils
 
-import org.scalatest._
-import org.scalatest.Assertions._
-import org.scalatest.{ Matchers, WordSpecLike }
 import org.scalatest.mockito.MockitoSugar
-import scala.util.{Try,Success,Failure}
+import org.scalatest.{Matchers, WordSpecLike}
+
+import scala.util.{Failure, Success}
 
 class ConfigSpec extends WordSpecLike with Matchers with MockitoSugar {
 
@@ -31,13 +30,15 @@ class ConfigSpec extends WordSpecLike with Matchers with MockitoSugar {
     setEnv("dry", "true")
     setEnv("secretName", "ENVSECRET")
     setEnv("awsRegion", "ENVREGION")
+    setEnv("svgServiceUrl", "ENVSERVICEURL")
   }
 
   def cleanDummyEnv(){
     delEnv("mintRequestsQueueUrl")
     delEnv("dry")
     delEnv("secretName")
-    delEnv("awsRegion") 
+    delEnv("awsRegion")
+    delEnv("svgServiceUrl")
   }
 
   "should load config from env" in {
@@ -55,6 +56,7 @@ class ConfigSpec extends WordSpecLike with Matchers with MockitoSugar {
     assert(okConfig.dry==true)
     assert(okConfig.secretName=="ergo-node-testnet-config")
     assert(okConfig.awsRegion=="us-east-2")
+    assert(okConfig.svgServiceUrl=="https://304dkozk9a.execute-api.us-east-2.amazonaws.com")
   }
 
   "should prefer loading config from env " in {
@@ -64,6 +66,7 @@ class ConfigSpec extends WordSpecLike with Matchers with MockitoSugar {
     assert(okConfig.dry)
     assert(okConfig.secretName=="ENVSECRET")
     assert(okConfig.awsRegion=="ENVREGION")
+    assert(okConfig.svgServiceUrl=="ENVSERVICEURL")
     cleanDummyEnv()
   }
 
@@ -73,5 +76,6 @@ class ConfigSpec extends WordSpecLike with Matchers with MockitoSugar {
     assert(okConfig.dry==true)
     assert(okConfig.secretName=="ergo-node-testnet-config")
     assert(okConfig.awsRegion=="us-east-2")
+    assert(okConfig.svgServiceUrl=="https://304dkozk9a.execute-api.us-east-2.amazonaws.com")
   }
 }

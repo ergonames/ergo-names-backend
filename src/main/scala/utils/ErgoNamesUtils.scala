@@ -2,6 +2,7 @@ package utils
 
 import contracts.ErgoNamesMintingContract
 import models.AppKitWorkaround.NewBoxesRequestHolder
+import models.ErgoNamesConfig
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
 import org.ergoplatform.appkit.impl.{ErgoTreeContract, InputBoxImpl}
@@ -14,6 +15,7 @@ import special.collection.CollOverArray
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success}
 
 object ErgoNamesUtils {
   def buildErgoClient(nodeConf: ErgoNodeConfig, networkType: NetworkType): ErgoClient = {
@@ -203,5 +205,13 @@ object ErgoNamesUtils {
 
     val utxo = new InputBoxImpl(response.body()).asInstanceOf[InputBox]
     utxo
+  }
+
+  def getConfig: ErgoNamesConfig = {
+    // Getting a config from env or from file
+    ConfigManager.getConfig match {
+      case Success(c) => c
+      case Failure(x) => throw new Exception(x)
+    }
   }
 }
