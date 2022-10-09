@@ -8,6 +8,7 @@ libraryDependencies += "org.ergoplatform" %% "ergo-appkit" % "4.0.10"
 libraryDependencies += "com.typesafe.play" %% "play-json" % "2.9.2"
 libraryDependencies += "io.github.dav009" %% "ergopuppet" % "0.0.0+28-8ee0ca24+20220219-2144"  % Test
 libraryDependencies += ("org.scorexfoundation" %% "sigma-state" % "4.0.5" ).classifier("tests")  % Test
+libraryDependencies += "com.lihaoyi" %% "requests" % "0.1.8"
 
 // Java dependencies
 libraryDependencies += "org.mockito" % "mockito-core" % "4.3.1" % Test
