@@ -10,12 +10,13 @@ object ProcessMintingRequest {
     val ergoConfig = ErgoToolConfig.load("ergo_node_config.json")
     val ergoClient = ErgoNamesUtils.buildErgoClient(ergoConfig.getNode, ergoConfig.getNode.getNetworkType)
     val nodeService = ErgoNamesUtils.buildNodeService(ergoConfig)
+    val walletService = ErgoNamesUtils.buildNewWalletApiService(ergoConfig)
     val minter = new Minter()
 
     val txId = ergoClient.execute((ctx: BlockchainContext) => {
       val prover = ErgoNamesUtils.buildProver(ctx, ergoConfig.getNode)
       val mintingRequestBoxId = ergoConfig.getParameters.get("mintRequestBoxId")
-      minter.mint(mintingRequestBoxId, ctx, prover, nodeService, ergoConfig)
+      minter.mint(mintingRequestBoxId, ctx, prover, nodeService, walletService)
     })
 
     println(txId)

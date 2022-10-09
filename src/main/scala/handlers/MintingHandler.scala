@@ -2,16 +2,15 @@ package handlers
 
 import com.amazonaws.services.lambda.runtime.Context
 import com.amazonaws.services.lambda.runtime.events.SQSEvent
-import models.{ErgoNamesConfig, MintingRequestSqsMessage}
+import models.MintingRequestSqsMessage
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import play.api.libs.json.{Json, OWrites, Reads}
 import services.Minter
-import utils.{AwsHelper, ConfigManager, ErgoNamesUtils}
+import utils.{AwsHelper, ErgoNamesUtils}
 
 import java.io.StringReader
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success}
 
 class MintingHandler {
   implicit val mintRequestSqsMessageReads: Reads[MintingRequestSqsMessage] = Json.reads[MintingRequestSqsMessage]
@@ -51,11 +50,12 @@ class MintingHandler {
     val txIds = ergoClient.execute((ctx: BlockchainContext) => {
       val prover = ErgoNamesUtils.buildProver(ctx, ergoConfig.getNode)
       val nodeService = ErgoNamesUtils.buildNodeService(ergoConfig)
+      val walletService = ErgoNamesUtils.buildNewWalletApiService(ergoConfig)
 
       mintRequests.map{
         case (rawMessage, mintRequest) =>
           // TODO: Account for failures
-          val txId = minter.mint(mintRequest.mintingRequestBoxId, ctx, prover, nodeService, ergoConfig)
+          val txId = minter.mint(mintRequest.mintingRequestBoxId, ctx, prover, nodeService, walletService)
           sqsClient.deleteMessage(queueUrl, rawMessage.getReceiptHandle)
           txId
       }.toList
