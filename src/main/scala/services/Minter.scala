@@ -1,14 +1,17 @@
 package services
 
 import models.MintRequestArgs
+import org.apache.commons.codec.digest.DigestUtils
 import org.ergoplatform.ErgoAddress
-import org.ergoplatform.appkit.impl.ErgoTreeContract
 import org.ergoplatform.appkit._
+import org.ergoplatform.appkit.config.ErgoToolConfig
+import org.ergoplatform.appkit.impl.{Eip4TokenBuilder, ErgoTreeContract}
 import org.ergoplatform.restapi.client.UtxoApi
 import sigmastate.serialization.ErgoTreeSerializer
 import special.collection.CollOverArray
-import utils.ErgoNamesUtils
+import utils.{ConfigManager, ErgoNamesUtils}
 
+import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 
 class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
@@ -23,14 +26,15 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
 
     // OUTPUT 1
     val nftIssuanceOutBox = {
-      // TODO: Get standard token description from config or something
-      // TODO: Generate asset type, image hash and url
       val mintRequestArgs = extractArgsFromMintRequestBox(mintRequestInBox, ctx.getNetworkType)
-      val eip4CompliantRegisters = buildEIP4CompliantRegisters(mintRequestArgs.tokenName, "token description", 0, "assetType", "imageHash", "imageUrl")
-      // TODO: Figure out how to pass R4-R9 and use them properly inside this method
-      val nft = buildNft(mintRequestInBox.getId.toString, mintRequestArgs.tokenName)
 
-      buildNftIssuanceOutBox(ctx, nftIssuanceBoxValue, mintRequestArgs, nft, eip4CompliantRegisters)
+      // TODO: Get standard token description from config or something
+      val tokenDescription = "token description"
+      val imageHash = getImageHash(mintRequestArgs.tokenName)
+      val imageUrl = getImageUrl(mintRequestArgs.tokenName)
+      val nft = buildNft(mintRequestInBox.getId.toString, mintRequestArgs.tokenName, tokenDescription, imageHash, imageUrl)
+
+      buildNftIssuanceOutBox(ctx, nftIssuanceBoxValue, mintRequestArgs, nft)
     }
 
     // OUTPUT 2
@@ -57,10 +61,9 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     utxo
   }
 
-  def buildNft(boxId: String, tokenName: String): Eip4Token = {
-    // Because it's an NFT, the amount must be 1
-//    new ErgoToken(boxId, 1)
-      new Eip4Token(boxId, 1, tokenName, "description TBD", 0)
+  def buildNft(boxId: String, name: String, description: String, imageHash: String, imageUrl: String): Eip4Token = {
+      // Amount must be 1 and decimal 0 because it's an NFT
+      Eip4TokenBuilder.buildNftPictureToken(boxId, 1, name, description, 0, imageHash.getBytes, imageUrl)
   }
 
   def extractArgsFromMintRequestBox(mintRequestBox: InputBox, networkType: NetworkType): MintRequestArgs = {
@@ -74,27 +77,11 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     MintRequestArgs(new String(R5_tokenNameBytes), R6_expectedPaymentAmount, receiverAddress)
   }
 
-  def buildEIP4CompliantRegisters(tokenName: String, tokenDescription: String, tokenDecimals: Long, assetType: String, imageHash: String, imageUrl: String): List[ErgoValue[_]] = {
-    // https://github.com/ergoplatform/eips/blob/master/eip-0004.md
-    val R4_tokenName = ErgoValue.of(tokenName.getBytes())
-    val R5_tokenDescription = ErgoValue.of(tokenDescription.getBytes())
-    val R6_tokenDecimals = ErgoValue.of(tokenDecimals)
-    val R7_assetType = ErgoValue.of(assetType.getBytes())
-    val R8_imageHash = ErgoValue.of(imageHash.getBytes())
-    val R9_imageUrl = ErgoValue.of(imageUrl.getBytes())
-
-    List(R4_tokenName, R5_tokenDescription, R6_tokenDecimals, R7_assetType, R8_imageHash, R9_imageUrl)
-  }
-
-  def buildNftIssuanceOutBox(ctx: BlockchainContext, boxValue: Long, mintRequestArgs: MintRequestArgs, nft: Eip4Token, eip4CompliantRegisters: List[ErgoValue[_]]): OutBox = {
-    // TODO: Make this box FULLY EIP-4 compliant
+  def buildNftIssuanceOutBox(ctx: BlockchainContext, boxValue: Long, mintRequestArgs: MintRequestArgs, nft: Eip4Token): OutBox = {
     ctx.newTxBuilder.outBoxBuilder
       .value(boxValue)
       .contract(new ErgoTreeContract(mintRequestArgs.receiverAddress.getErgoAddress.script, ctx.getNetworkType))
-      // TODO: Pull token description and number of decimals from config
-      // TODO: Check what happens if you set tokenName to empty string here, but specify it in registers
       .mintToken(nft)
-      .registers(eip4CompliantRegisters:_*)
       .build()
   }
 
@@ -115,5 +102,19 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
       .fee(fee)
       .sendChangeTo(changeAddress)
       .build()
+  }
+
+  def getImageHash(ergoname: String): String = {
+    val svgServiceBaseUrl = ConfigManager.get("svgServiceUrl")
+    val endpoint = s"$svgServiceBaseUrl/generateSvg/raw/$ergoname"
+    val result = requests.get(endpoint)
+    DigestUtils.sha256Hex(result.text.getBytes(StandardCharsets.UTF_8))
+  }
+
+  def getImageUrl(ergoname: String): String = {
+    val svgServiceBaseUrl = ConfigManager.get("svgServiceUrl")
+    val endpoint = s"$svgServiceBaseUrl/generateSvg/url/$ergoname"
+    val result = requests.get(endpoint)
+    result.text
   }
 }
