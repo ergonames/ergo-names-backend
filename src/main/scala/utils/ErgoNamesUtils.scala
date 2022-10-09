@@ -1,17 +1,21 @@
 package utils
 
 import contracts.ErgoNamesMintingContract
-import org.ergoplatform.{ErgoAddress, P2PKAddress}
-import org.ergoplatform.appkit.config.ErgoNodeConfig
+import models.AppKitWorkaround.NewBoxesRequestHolder
+import models.ErgoNamesConfig
 import org.ergoplatform.appkit._
-import org.ergoplatform.appkit.impl.ErgoTreeContract
+import org.ergoplatform.appkit.config.{ErgoNodeConfig, ErgoToolConfig}
+import org.ergoplatform.appkit.impl.{ErgoTreeContract, InputBoxImpl}
+import org.ergoplatform.restapi.client.{ApiClient, UtxoApi, WalletApi}
+import org.ergoplatform.{ErgoAddress, P2PKAddress}
+import services.AppKitWorkaround.NewWalletApi
 import sigmastate.basics.DLogProtocol.ProveDlog
-import sigmastate.eval.Colls
 import sigmastate.serialization.ErgoTreeSerializer
 import special.collection.CollOverArray
 
-import java.util.Optional
-import java.util.stream.Collectors
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success}
 
 object ErgoNamesUtils {
   def buildErgoClient(nodeConf: ErgoNodeConfig, networkType: NetworkType): ErgoClient = {
@@ -25,12 +29,41 @@ object ErgoNamesUtils {
         SecretString.create(nodeConf.getWallet.getPassword)
       )
       .withEip3Secret(0)
+      .withEip3Secret(1)
       .build()
   }
 
-  def getBoxesToSpendFromWallet(ctx: BlockchainContext, totalToSpend: Long): Optional[java.util.List[InputBox]] = {
-    val wallet: ErgoWallet = ctx.getWallet
-    wallet.getUnspentBoxes(totalToSpend)
+  def getUnspentBoxesFromWallet(conf: ErgoToolConfig, totalToSpend: Long): java.util.List[InputBox] = {
+    val walletService = buildNewWalletApiService(conf)
+
+    val getWalletBoxesRequest = new NewBoxesRequestHolder()
+      .targetBalance(totalToSpend)
+      // targetAssets cannot be empty or node API will reject request
+      .targetAssets(new java.util.HashMap[String, java.lang.Long]())
+    val response = walletService.walletBoxesCollect(getWalletBoxesRequest).execute()
+
+    if (!response.isSuccessful)
+      throw new Exception(s"Something went wrong when trying to get boxes from wallet for a total amount of $totalToSpend. ${response.message()}")
+
+    if (response.body() == null)
+      throw new Exception(s"Not enough boxes in wallet to cover balance of $totalToSpend")
+
+    val walletBoxes = response.body()
+      .getBoxes
+      .asScala
+      .map(output => new InputBoxImpl(output).asInstanceOf[InputBox])
+
+    var valueCounter: Long = 0
+    val justEnoughBoxes = ListBuffer[InputBox]()
+
+    walletBoxes.foreach(inputBox => {
+      if (valueCounter < totalToSpend) {
+        justEnoughBoxes += inputBox
+        valueCounter += inputBox.getValue
+      }
+    })
+
+    justEnoughBoxes.toList.asJava
   }
 
   def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
@@ -57,11 +90,11 @@ object ErgoNamesUtils {
     val expectedRoyalty = ErgoValue.of(royalty)
     val expectedTokenName = ErgoValue.of(tokenName.getBytes)
     val expectedPaymentAmount = ErgoValue.of(paymentAmount)
-    val expectedReceiverAddress = ErgoValue.of(Colls.fromArray(receiverAddress.getErgoAddress.script.bytes), ErgoType.byteType)
+    val expectedReceiverAddress = ErgoValue.of(receiverAddress.getErgoAddress.script.bytes)
 
     ctx.newTxBuilder.outBoxBuilder
-      .value(paymentAmount)
-      .contract(new ErgoTreeContract(mintingContractAddress.getErgoAddress.script))
+      .value(paymentAmount + Parameters.MinFee + Parameters.MinChangeValue)
+      .contract(new ErgoTreeContract(mintingContractAddress.getErgoAddress.script, ctx.getNetworkType))
       .registers(expectedRoyalty, expectedTokenName, expectedPaymentAmount, expectedReceiverAddress)
       .build()
   }
@@ -75,12 +108,24 @@ object ErgoNamesUtils {
     //  We can tweak redrive policy and message delay configs to give a tx enough time to confirm.
     //  If after X minutes of waiting and retrying the box still can be found, we can let the message go to the DLQ to inspect further.
     // this might need to iterate boxes at the contract address if there are a lot of unspent boxes (unprocessed mint requests)
-    val matches: java.util.List[InputBox] = ctx.getUnspentBoxesFor(contractAddress, 0, 20)
-      .stream()
-      .filter(_.getId == ErgoId.create(mintRequestBoxId))
-      .collect(Collectors.toList())
+//    val matches: java.util.List[InputBox] = ctx.getUnspentBoxesFor(contractAddress, 0, 20)
+//      .stream()
+//      .filter(_.getId == ErgoId.create(mintRequestBoxId))
+//      .collect(Collectors.toList())
 
-    matches.get(0)
+    // This throws an ErgoClientException with message 'Cannot load UTXO box $boxId' if the tx that issued the box has not been confirmed.
+    // Consider using this method instead, catching the exception and just raising another with a more detailed message.
+//    Exception in thread "main" org.ergoplatform.appkit.ErgoClientException: Cannot load UTXO box 2da5b5d90bcdc867ba96d629c97f4bed884f17d97d928bcd603f0bb090934b55
+    try {
+      val boxMatch = ctx.getBoxesById(mintRequestBoxId)
+      boxMatch(0)
+    } catch {
+      case e: ErgoClientException =>
+        val exceptionMessage = s"${e.getMessage}. This may mean the tx that issued it has not been confirmed yet. Wait 1 or 2 minutes and try again."
+        throw new Exception(exceptionMessage)
+    }
+
+//    matches.get(0)
   }
 
   def issuanceBoxArgs(networkType: NetworkType, value: Long, mintRequestBox: InputBox, tokenDescription: String) = {
@@ -89,25 +134,23 @@ object ErgoNamesUtils {
     val deserializedReceiverAddress = ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R7_receiverAddressBytes)
     val proposedReceiverAddress = Address.fromErgoTree(deserializedReceiverAddress, networkType)
 
-    val token = new ErgoToken(mintRequestBox.getId, 1)
     val proposedTokenName = new String(R5_tokenNameBytes)
     val proposedTokenDescription = tokenDescription
     val tokenDecimals = 0
-    val contract = new ErgoTreeContract(proposedReceiverAddress.getErgoAddress.script)
+    val token = new Eip4Token(mintRequestBox.getId.toString, 1, proposedTokenName, proposedTokenDescription, tokenDecimals)
+    // issuanceBoxContract
+    val contract = new ErgoTreeContract(proposedReceiverAddress.getErgoAddress.script, networkType)
     (token, proposedTokenName, proposedTokenDescription, tokenDecimals, value, contract)
   }
 
   def buildBoxWithTokenToMint(
     ctx: BlockchainContext,
-    token: ErgoToken,
-    proposedTokenName: String,
-    proposedTokenDescription: String,
-    tokenDecimals: Int,
+    token: Eip4Token,
     value: Long,
     contract: ErgoTreeContract): OutBox = {
 
     ctx.newTxBuilder.outBoxBuilder
-      .mintToken(token, proposedTokenName, proposedTokenDescription, tokenDecimals)
+      .mintToken(token)
       .value(value)
       .contract(contract)
       .build()
@@ -119,7 +162,56 @@ object ErgoNamesUtils {
 
     ctx.newTxBuilder.outBoxBuilder
       .value(collectionAmount)
-      .contract(new ErgoTreeContract(ergoNamesP2KAddress.script))
+      .contract(new ErgoTreeContract(ergoNamesP2KAddress.script, ctx.getNetworkType))
       .build()
+  }
+
+
+  ////////////////
+  def buildNodeService(conf: ErgoToolConfig): UtxoApi = {
+    val nodeClient = new ApiClient(conf.getNode.getNodeApi.getApiUrl, "ApiKeyAuth", conf.getNode.getNodeApi.getApiKey)
+    nodeClient.createService(classOf[UtxoApi])
+  }
+
+  def buildWalletApiService(conf: ErgoToolConfig): WalletApi = {
+    val walletService = new ApiClient(conf.getNode.getNodeApi.getApiUrl, "ApiKeyAuth", conf.getNode.getNodeApi.getApiKey)
+    walletService.createService(classOf[WalletApi])
+  }
+
+  def buildNewWalletApiService(conf: ErgoToolConfig): NewWalletApi = {
+    val walletService = new ApiClient(conf.getNode.getNodeApi.getApiUrl, "ApiKeyAuth", conf.getNode.getNodeApi.getApiKey)
+    walletService.createService(classOf[NewWalletApi])
+  }
+
+  def getUnspentBoxFromMempool(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
+    val response = nodeService.getBoxWithPoolById(boxId).execute()
+    if (!response.isSuccessful)
+      throw new Exception(s"Something went wrong when trying to get box $boxId from mempool. ${response.message()}")
+
+    if (response.body() == null)
+      return null
+
+    val inputBox = new InputBoxImpl(response.body()).asInstanceOf[InputBox]
+    inputBox
+  }
+
+  def getUnspentBoxFromUtxoSet(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
+    val response = nodeService.getBoxById(boxId).execute()
+    if (!response.isSuccessful)
+      throw new Exception(s"Something went wrong when trying to get box $boxId from utxo set. ${response.message()}")
+
+    if (response.body() == null)
+      return null
+
+    val utxo = new InputBoxImpl(response.body()).asInstanceOf[InputBox]
+    utxo
+  }
+
+  def getConfig: ErgoNamesConfig = {
+    // Getting a config from env or from file
+    ConfigManager.getConfig match {
+      case Success(c) => c
+      case Failure(x) => throw new Exception(x)
+    }
   }
 }

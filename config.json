@@ -2,5 +2,6 @@
     "mintRequestsQueueUrl": "https://sqs.us-east-2.amazonaws.com/453627713520/mint-requests-queue-testnet",
     "dry": true,
     "secretName": "ergo-node-testnet-config",
-    "awsRegion": "us-east-2"
+    "awsRegion": "us-east-2",
+    "svgServiceUrl": "https://304dkozk9a.execute-api.us-east-2.amazonaws.com"
 }

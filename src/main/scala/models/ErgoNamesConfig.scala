@@ -1,3 +1,3 @@
 package models
 
-case class ErgoNamesConfig(mintRequestsQueueUrl: String, dry: Boolean, secretName: String, awsRegion: String)
+case class ErgoNamesConfig(mintRequestsQueueUrl: String, dry: Boolean, secretName: String, awsRegion: String, svgServiceUrl: String)

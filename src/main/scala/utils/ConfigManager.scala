@@ -18,7 +18,8 @@ object ConfigManager {
          case Some(r) => r
          case None => sys.env.get("AWS_REGION").get  
        }
-       ErgoNamesConfig(mintRequestsQueueUrl, dry, secretName, awsRegion)
+      val svgServiceUrl = sys.env.get("svgServiceUrl").get
+       ErgoNamesConfig(mintRequestsQueueUrl, dry, secretName, awsRegion, svgServiceUrl)
      }
     )
   }
