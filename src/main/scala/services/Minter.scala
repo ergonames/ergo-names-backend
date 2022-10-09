@@ -106,14 +106,14 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
   }
 
   def getImageHash(ergoname: String): String = {
-    val svgServiceBaseUrl = ConfigManager.get("svgServiceUrl")
+    val svgServiceBaseUrl = ErgoNamesUtils.getConfig.svgServiceUrl
     val endpoint = s"$svgServiceBaseUrl/generateSvg/raw/$ergoname"
     val result = requests.get(endpoint)
     DigestUtils.sha256Hex(result.text.getBytes(StandardCharsets.UTF_8))
   }
 
   def getImageUrl(ergoname: String): String = {
-    val svgServiceBaseUrl = ConfigManager.get("svgServiceUrl")
+    val svgServiceBaseUrl = ErgoNamesUtils.getConfig.svgServiceUrl
     val endpoint = s"$svgServiceBaseUrl/generateSvg/url/$ergoname"
     val result = requests.get(endpoint)
     result.text
