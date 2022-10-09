@@ -15,7 +15,7 @@ object ProcessMintingRequest {
     val txId = ergoClient.execute((ctx: BlockchainContext) => {
       val prover = ErgoNamesUtils.buildProver(ctx, ergoConfig.getNode)
       val mintingRequestBoxId = ergoConfig.getParameters.get("mintRequestBoxId")
-      minter.mint(mintingRequestBoxId, ctx, prover, nodeService)
+      minter.mint(mintingRequestBoxId, ctx, prover, nodeService, ergoConfig)
     })
 
     println(txId)

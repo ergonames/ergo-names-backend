@@ -87,6 +87,10 @@ object ErgoNamesMintingContract {
           val proposedReceiverAddress = OUTPUTS(0).propositionBytes
           val receiverAddressOk = expectedReceiverAddress == proposedReceiverAddress
 
+          // Verify that the first input comes from
+          val firstInputIsFromErgoNames = INPUTS(0).propositionBytes == ergoNamesPk.propBytes
+
+          firstInputIsFromErgoNames &&
           proposedTokenSpecsOk &&
           royaltyOk &&
           tokenNameOk &&

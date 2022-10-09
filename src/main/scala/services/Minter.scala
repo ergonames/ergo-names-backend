@@ -15,8 +15,9 @@ import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 
 class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
-  def mint(boxId: String, ctx: BlockchainContext, prover: ErgoProver, nodeService: UtxoApi): String = {
+  def mint(boxId: String, ctx: BlockchainContext, prover: ErgoProver, nodeService: UtxoApi, ergoConfig: ErgoToolConfig): String = {
     // GET INPUT(S)
+    val ergoNamesInBox = ErgoNamesUtils.getUnspentBoxesFromWallet(ergoConfig, Parameters.MinChangeValue).get(0)
     val mintRequestInBox = getMintRequestBox(ctx, nodeService, boxId)
 
     // BUILD OUTPUTS
@@ -41,7 +42,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getAddress)
 
     // BUILD UNSIGNED TX
-    val inputs = List(mintRequestInBox)
+    val inputs = List(ergoNamesInBox, mintRequestInBox)
     val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox)
     val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, prover.getP2PKAddress)
 

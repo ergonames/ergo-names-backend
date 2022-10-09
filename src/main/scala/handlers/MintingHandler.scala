@@ -57,7 +57,7 @@ class MintingHandler {
       mintRequests.map{
         case (rawMessage, mintRequest) =>
           // TODO: Account for failures
-          val txId = minter.mint(mintRequest.mintingRequestBoxId, ctx, prover, nodeService)
+          val txId = minter.mint(mintRequest.mintingRequestBoxId, ctx, prover, nodeService, ergoConfig)
           sqsClient.deleteMessage(queueUrl, rawMessage.getReceiptHandle)
           txId
       }.toList
