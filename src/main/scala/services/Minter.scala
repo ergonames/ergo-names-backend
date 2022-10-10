@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 
 class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
-  def mint(boxId: String, ctx: BlockchainContext, prover: ErgoProver, nodeService: UtxoApi, walletService: NewWalletApi): String = {
+  def mint(boxId: String, royalty: Int, ctx: BlockchainContext, prover: ErgoProver, nodeService: UtxoApi, walletService: NewWalletApi): String = {
     // GET INPUT(S)
     val ergoNamesInBox = ErgoNamesUtils.getUnspentBoxesFromWallet(walletService, Parameters.MinChangeValue).get(0)
     val mintRequestInBox = getMintRequestBox(ctx, nodeService, boxId)
@@ -39,17 +39,20 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     }
 
     // OUTPUT 2
-    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getAddress)
+    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getAddress, royalty)
 
     // BUILD UNSIGNED TX
     val inputs = List(ergoNamesInBox, mintRequestInBox)
     val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox)
+
     val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, prover.getP2PKAddress)
 
     // SIGN AND SUBMIT TX
     val signedTx = prover.sign(unsignedTx)
-    val txId = ctx.sendTransaction(signedTx)
-    txId
+    //val txId = ctx.sendTransaction(signedTx)
+    //txId
+    val txJson = signedTx.toJson(true)
+    txJson
   }
 
   def getMintRequestBox(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
@@ -86,12 +89,14 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
       .build()
   }
 
-  def buildPaymentCollectionOutBox(ctx: BlockchainContext, expectedPaymentAmount: Long, paymentCollectionAddress: Address): OutBox = {
+  def buildPaymentCollectionOutBox(ctx: BlockchainContext, expectedPaymentAmount: Long, paymentCollectionAddress: Address, royalty: Int): OutBox = {
+    val R4_royaltyAmount = ErgoValue.of(royalty)
     val contract = new ErgoTreeContract(paymentCollectionAddress.getErgoAddress.script, ctx.getNetworkType)
 
     ctx.newTxBuilder.outBoxBuilder
       .value(expectedPaymentAmount)
       .contract(contract)
+      .registers(R4_royaltyAmount)
       .build()
   }
 
@@ -99,7 +104,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
   def buildUnsignedTx(ctx: BlockchainContext, inputs: List[InputBox], outputs: List[OutBox], fee: Long, changeAddress: ErgoAddress): UnsignedTransaction = {
     ctx.newTxBuilder()
       .boxesToSpend(inputs.asJava)
-      .outputs(outputs:_*)
+      .outputs(outputs(0), outputs(1))
       .fee(fee)
       .sendChangeTo(changeAddress)
       .build()

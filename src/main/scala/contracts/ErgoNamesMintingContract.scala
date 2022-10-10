@@ -57,7 +57,7 @@ object ErgoNamesMintingContract {
 
         // Verify INPUTS(0) is from ErgoNames
         val ergoNamesInput = {
-          val senderAddress = INPUTS(0).propBytes
+          val senderAddress = INPUTS(0).propositionBytes
           val isErgoNamesSender = senderAddress == ergoNamesPk.propBytes
 
           val specifiedRoyalty = INPUTS(0).R4[Int].get
@@ -70,17 +70,17 @@ object ErgoNamesMintingContract {
         // Verify INPUTS(1) meets all the requirements for minting the NFT
         val mintingRequestInput = {
           // Verify token is an NFT
-          val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == SELF.id
+          val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == INPUTS(1).id
           val proposedTokenIsNonFungible = OUTPUTS(0).tokens(0)._2 == 1
           val proposedTokenSpecsOk = proposedTokenHasSameIdAsFirstTxInput && proposedTokenIsNonFungible
 
           // Verify name of token being issued is correct
-          val expectedTokenName = SELF.R5[Coll[Byte]].get
+          val expectedTokenName = INPUTS(1).R5[Coll[Byte]].get
           val proposedTokenName = OUTPUTS(0).R4[Coll[Byte]].get
           val tokenNameOk = expectedTokenName == proposedTokenName
 
           // Verify correct payment is being collected
-          val expectedPayment = SELF.R6[Long].get
+          val expectedPayment = INPUTS(1).R6[Long].get
           val amountBeingCollected = OUTPUTS(1).value
           val collectedPaymentOk = amountBeingCollected == expectedPayment
 
@@ -88,7 +88,7 @@ object ErgoNamesMintingContract {
           val collectedByErgoNames = OUTPUTS(1).propositionBytes == ergoNamesPk.propBytes
 
           // Verify that NFT is being sent back to the user
-          val expectedReceiverAddress = SELF.R7[Coll[Byte]].get
+          val expectedReceiverAddress = INPUTS(1).R7[Coll[Byte]].get
           val proposedReceiverAddress = OUTPUTS(0).propositionBytes
           val receiverAddressOk = expectedReceiverAddress == proposedReceiverAddress
 
@@ -105,11 +105,13 @@ object ErgoNamesMintingContract {
 
         // In case of a refund, check that funds are going back to the sender
         val issueRefund = {
-            val senderAddress = SELF.R7[Coll[Byte]].get
+            val senderAddress = INPUTS(1).R7[Coll[Byte]].get
             val fundsAreGoingBackToSender = senderAddress == OUTPUTS(0).propositionBytes
 
-            val amountToReturn = SELF.value - 1000000
-            val correctAmountBeingReturned = amountToReturn == OUTPUTS(0).value
+            val inputsValue = INPUTS(0).value + INPUTS(1).value
+            val amountToReturn = inputsValue - txFee
+            val outputsValue = OUTPUTS(0).value + OUTPUTS(1).value
+            val correctAmountBeingReturned = amountToReturn == outputsValue
 
             fundsAreGoingBackToSender && correctAmountBeingReturned
         }
@@ -117,7 +119,7 @@ object ErgoNamesMintingContract {
 
         val collectRoyalty = {
           // checking for empty registers is a way to prevent ErgoNames from just collecting funds from a valid minting request box without actually issuing an NFT.
-          val isNotMintingRequest = !(SELF.R4[Int].isDefined) && !(SELF.R5[Coll[Byte]].isDefined) && !(SELF.R6[Long].isDefined) && !(SELF.R7[Coll[Byte]].isDefined)
+          val isNotMintingRequest = !(INPUTS(1).R4[Int].isDefined) && !(INPUTS(1).R5[Coll[Byte]].isDefined) && !(INPUTS(1).R6[Long].isDefined) && !(INPUTS(1).R7[Coll[Byte]].isDefined)
           val beingCollectedByErgoNames = OUTPUTS(0).propositionBytes == ergoNamesPk.propBytes // could actually make royalties go to royalties contract
 
           isNotMintingRequest && beingCollectedByErgoNames

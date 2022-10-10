@@ -52,10 +52,12 @@ class MintingHandler {
       val nodeService = ErgoNamesUtils.buildNodeService(ergoConfig)
       val walletService = ErgoNamesUtils.buildNewWalletApiService(ergoConfig)
 
+      val royalty = ergoConfig.getParameters.get("royaltyPercetage").toInt
+
       mintRequests.map{
         case (rawMessage, mintRequest) =>
           // TODO: Account for failures
-          val txId = minter.mint(mintRequest.mintingRequestBoxId, ctx, prover, nodeService, walletService)
+          val txId = minter.mint(mintRequest.mintingRequestBoxId, royalty, ctx, prover, nodeService, walletService)
           sqsClient.deleteMessage(queueUrl, rawMessage.getReceiptHandle)
           txId
       }.toList
