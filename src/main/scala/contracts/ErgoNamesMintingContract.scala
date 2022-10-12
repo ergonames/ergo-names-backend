@@ -70,7 +70,7 @@ object ErgoNamesMintingContract {
         // Verify INPUTS(1) meets all the requirements for minting the NFT
         val mintingRequestInput = {
           // Verify token is an NFT
-          val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == INPUTS(1).id
+          val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == INPUTS(0).id
           val proposedTokenIsNonFungible = OUTPUTS(0).tokens(0)._2 == 1
           val proposedTokenSpecsOk = proposedTokenHasSameIdAsFirstTxInput && proposedTokenIsNonFungible
 
@@ -81,7 +81,7 @@ object ErgoNamesMintingContract {
 
           // Verify correct payment is being collected
           val expectedPayment = INPUTS(1).R6[Long].get
-          val amountBeingCollected = OUTPUTS(1).value
+          val amountBeingCollected = OUTPUTS(1).value - txFee
           val collectedPaymentOk = amountBeingCollected == expectedPayment
 
           // Verify payment is being sent to the correct address

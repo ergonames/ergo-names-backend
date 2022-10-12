@@ -21,9 +21,10 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val mintRequestInBox = getMintRequestBox(ctx, nodeService, boxId)
 
     // BUILD OUTPUTS
+    val totalInputValue = ergoNamesInBox.getValue + mintRequestInBox.getValue
     val txFee = Parameters.MinFee
     val nftIssuanceBoxValue = Parameters.MinChangeValue
-    val paymentCollectionBoxValue = mintRequestInBox.getValue - txFee - nftIssuanceBoxValue
+    val paymentCollectionBoxValue = totalInputValue - nftIssuanceBoxValue - txFee
 
     // OUTPUT 1
     val nftIssuanceOutBox = {
@@ -33,7 +34,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
       val tokenDescription = "token description"
       val imageHash = getImageHash(mintRequestArgs.tokenName)
       val imageUrl = getImageUrl(mintRequestArgs.tokenName)
-      val nft = buildNft(mintRequestInBox.getId.toString, mintRequestArgs.tokenName, tokenDescription, imageHash, imageUrl)
+      val nft = buildNft(ergoNamesInBox.getId.toString, mintRequestArgs.tokenName, tokenDescription, imageHash, imageUrl)
 
       buildNftIssuanceOutBox(ctx, nftIssuanceBoxValue, mintRequestArgs, nft)
     }
@@ -49,10 +50,8 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
 
     // SIGN AND SUBMIT TX
     val signedTx = prover.sign(unsignedTx)
-    //val txId = ctx.sendTransaction(signedTx)
-    //txId
-    val txJson = signedTx.toJson(true)
-    txJson
+    val txId = ctx.sendTransaction(signedTx)
+    txId
   }
 
   def getMintRequestBox(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
