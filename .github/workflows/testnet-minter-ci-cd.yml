@@ -1,1 +1,18 @@
-
+on:
+  push:
+    branches:
+      - testnet
+  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: ECR Login
+    
+    - name: Build Minter Image
+    
+    - name: Publish Image to ECR
+    
+    - name: Update Minter Lambda
