@@ -53,7 +53,7 @@ class MintingRequestService {
     }
 
     // BUILD UNSIGNED TX
-    val unsignedTx = ErgoNamesUtilsV2.buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, prover.getP2PKAddress)
+    val unsignedTx = ErgoNamesUtilsV2.buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, prover.getEip3Addresses.get(0).getErgoAddress)
 
     // SIGN AND SUBMIT TX
     val signedTx = prover.sign(unsignedTx)

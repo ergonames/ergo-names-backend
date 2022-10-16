@@ -40,13 +40,14 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     }
 
     // OUTPUT 2
-    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getAddress, royalty)
+    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getEip3Addresses.get(0), royalty)
 
     // BUILD UNSIGNED TX
     val inputs = List(ergoNamesInBox, mintRequestInBox)
     val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox)
 
-    val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, prover.getP2PKAddress)
+    val correctChangeAddress = Address.create("3WxtPsqQVhdwQYA6BPGkfzo9y4vXoNNViZeguc3tJuxPo1XrheUp").getErgoAddress
+    val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, correctChangeAddress)
 
     // SIGN AND SUBMIT TX
     val signedTx = prover.sign(unsignedTx)
