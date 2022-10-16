@@ -52,7 +52,7 @@ class MintingHandler {
       val nodeService = ErgoNamesUtils.buildNodeService(ergoConfig)
       val walletService = ErgoNamesUtils.buildNewWalletApiService(ergoConfig)
 
-      val royalty = ergoConfig.getParameters.get("royaltyPercetage").toInt
+      val royalty = ergoConfig.getParameters.get("royaltyPercentage").toInt
 
       mintRequests.map{
         case (rawMessage, mintRequest) =>
