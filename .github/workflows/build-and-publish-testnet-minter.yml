@@ -7,7 +7,7 @@ on:
       - testnet
   
 jobs:
-  deploy:
+  build-and-publish-image:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Code
