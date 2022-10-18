@@ -25,7 +25,6 @@ jobs:
       uses: aws-actions/amazon-ecr-login@v1
     
     - name: Build, tag, and push image to ECR
-      uses: olafurpg/setup-scala@v10
       env: 
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         ECR_REPOSITORY: minter
