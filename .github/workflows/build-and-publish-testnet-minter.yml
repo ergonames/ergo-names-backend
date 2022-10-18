@@ -1,4 +1,7 @@
+name: Build and publish testnet minter image to ECR
+
 on:
+  workflow_dispatch:
   push:
     branches:
       - testnet
