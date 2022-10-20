@@ -31,3 +31,18 @@ It is expected to be sent to the receiver address specified in R6 of the minting
 A box that _should_ whose value should equal the amount specified in R5 of the minting request box.
 
 It is expected to be sent to the ErgoNames payments wallet.
+
+# Minting Flow
+
+```mermaid
+flowchart LR
+  A[Minting Request Box] --> C[TX]
+  C[TX] --> D[Minting Request Box]
+  subgraph Minting Tx
+  E[Identity Box] --> F[TX]
+  D[Minting Request Box] --> F[TX]
+  F[TX] --> G[Issuance Box]
+  F[TX] --> H[Payment Collection Box]
+  F[TX] --> I[Identity Box]
+  end
+```
