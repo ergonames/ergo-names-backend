@@ -66,3 +66,7 @@ flowchart LR
 ```
 
 We build the first transaction on behalf of the user, have them sign for it, and then submit it to the network. Upon successful submission of this transaction, we ping the ErgoNames API with the minting request box ID. The ErgoNames API then pushes a message with that minting request box ID to the minting requests queue. The minting handler will be invoked with this message, and it will build a transaction with the necessary inputs and outputs for minting the requested ergoname.
+
+# Minting Backend Architecture Diagram
+
+Pending
