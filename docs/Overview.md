@@ -72,4 +72,7 @@ We build the first transaction on behalf of the user, have them sign for it, and
 
 ![minting-flow-chart drawio](https://user-images.githubusercontent.com/33580723/197344060-64402b97-84fe-47ad-9b77-e453e5d4b2a4.svg)
 
+### Architecture
+
+![minting-architecture drawio](https://user-images.githubusercontent.com/33580723/197347687-bb559df5-4b75-4906-a722-a0c2b58cb731.svg)
 
