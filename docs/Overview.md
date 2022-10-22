@@ -46,6 +46,7 @@ When triggered, it runs the code for spending a minting request by ID and mintin
 
 # Minting Flow
 
+### Transactions breakdown
 Minting an ergoname requires two transactions:
 - One to submit the minting request box to the minting contract address
 - Another one to spend the minting request box and issue the ergoname; this is a chained transaction.
@@ -67,6 +68,8 @@ flowchart LR
 
 We build the first transaction on behalf of the user, have them sign for it, and then submit it to the network. Upon successful submission of this transaction, we ping the ErgoNames API with the minting request box ID. The ErgoNames API then pushes a message with that minting request box ID to the minting requests queue. The minting handler will be invoked with this message, and it will build a transaction with the necessary inputs and outputs for minting the requested ergoname.
 
-# Minting Backend Architecture Diagram
+### Flowchart
 
-Pending
+![minting-flow-chart drawio](https://user-images.githubusercontent.com/33580723/197344060-64402b97-84fe-47ad-9b77-e453e5d4b2a4.svg)
+
+
