@@ -34,6 +34,11 @@ A box that _should_ whose value should equal the amount specified in R5 of the m
 
 It is expected to be sent to the ErgoNames payments wallet.
 
+### ErgoNames API
+A REST API hosted in AWS Lambda, exposed via AWS API Gateway.
+
+It contains a set of endpoints we query throughout the lifecycle of our minting flow.
+
 ### Minting Requests Queue
 A queue backed by AWS SQS where minting request messages get published.
 
