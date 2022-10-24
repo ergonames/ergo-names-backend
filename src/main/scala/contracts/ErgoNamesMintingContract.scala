@@ -80,12 +80,17 @@ object ErgoNamesMintingContract {
           val tokenNameOk = expectedTokenName == proposedTokenName
 
           // Verify correct payment is being collected
-          val expectedPayment = INPUTS(1).R6[Long].get
-          val amountBeingCollected = OUTPUTS(1).value - txFee
+          val expectedPayment = INPUTS(1).R6[Long].get - txFee
+          val amountBeingCollected = OUTPUTS(1).value - txFee - txFee
           val collectedPaymentOk = amountBeingCollected == expectedPayment
 
           // Verify payment is being sent to the correct address
-          val collectedByErgoNames = OUTPUTS(1).propositionBytes == ergoNamesPk.propBytes
+          val collectedByPaymentAddress = OUTPUTS(1).propositionBytes == paymentCollectionPk.propBytes
+
+          // Verify ErgoName recieves box with min change value and R4 set
+          val amountBeingSentToErgoNames = OUTPUTS(2).value == txFee
+          val ergoNamesReceivesMinChange = OUTPUTS(2).propositionBytes == ergoNamesPk.propBytes
+          val ergoNamesReceivesOk = amountBeingSentToErgoNames && ergoNamesReceivesMinChange
 
           // Verify that NFT is being sent back to the user
           val expectedReceiverAddress = INPUTS(1).R7[Coll[Byte]].get
@@ -95,7 +100,7 @@ object ErgoNamesMintingContract {
           // Verify that the first input comes from
           val firstInputIsFromErgoNames = INPUTS(0).propositionBytes == ergoNamesPk.propBytes
 
-          proposedTokenSpecsOk && tokenNameOk && collectedPaymentOk && collectedByErgoNames && receiverAddressOk && firstInputIsFromErgoNames
+          proposedTokenSpecsOk && tokenNameOk && collectedPaymentOk && collectedByPaymentAddress && ergoNamesReceivesOk && receiverAddressOk && firstInputIsFromErgoNames
         }
 
         // Verify all the requirements for minting the NFT are met
@@ -134,7 +139,8 @@ object ErgoNamesMintingContract {
 
   def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog): ErgoContract = {
     val script = getScript
-    val constants = ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build()
+    val paymentCollectionAddress = Address.create("3WwbwjAdiWTJTX64QouBePnBebZK1TjjaX8LDCrrBg22WNUG3sMQ").getPublicKey()
+    val constants = ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).item("paymentCollectionPk", paymentCollectionAddress).build()
     val compiledContract: ErgoContract = ctx.compileContract(constants, script)
     compiledContract
   }

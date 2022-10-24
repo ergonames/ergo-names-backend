@@ -24,7 +24,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val totalInputValue = ergoNamesInBox.getValue + mintRequestInBox.getValue
     val txFee = Parameters.MinFee
     val nftIssuanceBoxValue = Parameters.MinChangeValue
-    val paymentCollectionBoxValue = totalInputValue - nftIssuanceBoxValue - txFee
+    val paymentCollectionBoxValue = totalInputValue - nftIssuanceBoxValue - txFee - Parameters.MinChangeValue
 
     // OUTPUT 1
     val nftIssuanceOutBox = {
@@ -40,13 +40,17 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     }
 
     // OUTPUT 2
-    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, prover.getEip3Addresses.get(0), royalty)
+    val paymentCollectionAddress = Address.create("3WwbwjAdiWTJTX64QouBePnBebZK1TjjaX8LDCrrBg22WNUG3sMQ")
+    val paymentCollectionOutBox = buildPaymentCollectionOutBox(ctx, paymentCollectionBoxValue, paymentCollectionAddress)
+
+    // OUTPUT 3
+    val ergonamesMinBox = buildErgoNamesMinBox(ctx, Parameters.MinChangeValue, prover.getEip3Addresses().get(0), royalty)
 
     // BUILD UNSIGNED TX
     val inputs = List(ergoNamesInBox, mintRequestInBox)
-    val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox)
+    val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox, ergonamesMinBox)
 
-    val correctChangeAddress = Address.create("3WxtPsqQVhdwQYA6BPGkfzo9y4vXoNNViZeguc3tJuxPo1XrheUp").getErgoAddress
+    val correctChangeAddress = prover.getEip3Addresses().get(0).getErgoAddress()
     val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, correctChangeAddress)
 
     // SIGN AND SUBMIT TX
@@ -89,12 +93,21 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
       .build()
   }
 
-  def buildPaymentCollectionOutBox(ctx: BlockchainContext, expectedPaymentAmount: Long, paymentCollectionAddress: Address, royalty: Int): OutBox = {
-    val R4_royaltyAmount = ErgoValue.of(royalty)
+  def buildPaymentCollectionOutBox(ctx: BlockchainContext, expectedPaymentAmount: Long, paymentCollectionAddress: Address): OutBox = {
     val contract = new ErgoTreeContract(paymentCollectionAddress.getErgoAddress.script, ctx.getNetworkType)
 
     ctx.newTxBuilder.outBoxBuilder
       .value(expectedPaymentAmount)
+      .contract(contract)
+      .build()
+  }
+
+  def buildErgoNamesMinBox(ctx: BlockchainContext, boxValue: Long, ergoNamesAddress: Address, royalty: Int): OutBox = {
+    val R4_royaltyAmount = ErgoValue.of(royalty)
+    val contract = new ErgoTreeContract(ergoNamesAddress.getErgoAddress.script, ctx.getNetworkType)
+
+    ctx.newTxBuilder.outBoxBuilder
+      .value(boxValue)
       .contract(contract)
       .registers(R4_royaltyAmount)
       .build()
@@ -104,7 +117,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
   def buildUnsignedTx(ctx: BlockchainContext, inputs: List[InputBox], outputs: List[OutBox], fee: Long, changeAddress: ErgoAddress): UnsignedTransaction = {
     ctx.newTxBuilder()
       .boxesToSpend(inputs.asJava)
-      .outputs(outputs(0), outputs(1))
+      .outputs(outputs(0), outputs(1), outputs(2))
       .fee(fee)
       .sendChangeTo(changeAddress)
       .build()
