@@ -140,9 +140,8 @@ object ErgoNamesMintingContract {
     script
   }
 
-  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog): ErgoContract = {
+  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog, paymentCollectionPk: ProveDlog): ErgoContract = {
     val script = getScript
-    val paymentCollectionPk = Address.create("3WwbwjAdiWTJTX64QouBePnBebZK1TjjaX8LDCrrBg22WNUG3sMQ").getPublicKey
     val constants = ConstantsBuilder.create()
       .item("ergoNamesPk", ergoNamesPk)
       .item("paymentCollectionPk", paymentCollectionPk)
@@ -151,8 +150,8 @@ object ErgoNamesMintingContract {
     compiledContract
   }
 
-  def getContractAddress(ctx: BlockchainContext, ergoNamesAddress: Address): Address = {
-    val contract = getContract(ctx, ergoNamesAddress.getPublicKey)
+  def getContractAddress(ctx: BlockchainContext, ergoNamesAddress: Address, paymentAddress: Address): Address = {
+    val contract = getContract(ctx, ergoNamesAddress.getPublicKey, paymentAddress.getPublicKey)
     val contractAddress = Address.fromErgoTree(contract.getErgoTree, ctx.getNetworkType)
     contractAddress
   }
