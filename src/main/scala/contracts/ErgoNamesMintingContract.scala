@@ -60,9 +60,9 @@ object ErgoNamesMintingContract {
         val ergoNamesInput = {
           val isErgoNamesSender = INPUTS(0).propositionBytes == ergoNamesPk.propBytes
 
-          // val specifiedRoyalty = INPUTS(0).R4[Int].get
-          // val expectedRoyalty = 20
-          // val isRoyaltyCorrect = specifiedRoyalty == expectedRoyalty
+           val specifiedRoyalty = INPUTS(0).R4[Int].get
+           val expectedRoyalty = 20
+           val isRoyaltyCorrect = specifiedRoyalty == expectedRoyalty
 
           // TODO: Check for royalty in ergonames in box
           isErgoNamesSender
@@ -97,7 +97,8 @@ object ErgoNamesMintingContract {
         val outputTwoOk = {
           val amountBeingSentToErgoNames = OUTPUTS(2).value == minChangeValue
           val ergoNamesReceivesMinChange = OUTPUTS(2).propositionBytes == ergoNamesPk.propBytes
-          val ergoNamesReceivesOk = amountBeingSentToErgoNames && ergoNamesReceivesMinChange
+          val ergoNamesRoyaltyInfoSet = OUTPUTS(2).R4[Int].get == 20
+          val ergoNamesReceivesOk = amountBeingSentToErgoNames && ergoNamesReceivesMinChange && ergoNamesRoyaltyInfoSet
 
           ergoNamesReceivesOk
         }
@@ -105,7 +106,7 @@ object ErgoNamesMintingContract {
         // Verify all the requirements for minting the NFT are met
         val mintToken = {
           // ergoNamesInput && outputZeroOk && outputOneOk && outputTwoOk
-          outputZeroOk && outputOneOk && outputTwoOk
+          ergoNamesInput && outputZeroOk && outputOneOk && outputTwoOk
         }
 
         // In case of a refund, check that funds are going back to the sender
@@ -130,18 +131,16 @@ object ErgoNamesMintingContract {
 
   def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog): ErgoContract = {
     val script = getScript
-    val paymentCollectionPk = Address.create("3WwbwjAdiWTJTX64QouBePnBebZK1TjjaX8LDCrrBg22WNUG3sMQ").getPublicKey()
-    val constants = ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).item("paymentCollectionPk", paymentCollectionPk).build()
+    val paymentCollectionPk = Address.create("3WwbwjAdiWTJTX64QouBePnBebZK1TjjaX8LDCrrBg22WNUG3sMQ").getPublicKey
+    val constants = ConstantsBuilder.create()
+      .item("ergoNamesPk", ergoNamesPk)
+      .item("paymentCollectionPk", paymentCollectionPk)
+      .build()
     val compiledContract: ErgoContract = ctx.compileContract(constants, script)
     compiledContract
   }
 
-  def getContractAddress(ctx: BlockchainContext, walletConfig: WalletConfig): Address = {
-    val ergoNamesAddress = Address.fromMnemonic(
-      ctx.getNetworkType,
-      SecretString.create(walletConfig.getMnemonic),
-      SecretString.create(walletConfig.getPassword))
-
+  def getContractAddress(ctx: BlockchainContext, ergoNamesAddress: Address): Address = {
     val contract = getContract(ctx, ergoNamesAddress.getPublicKey)
     val contractAddress = Address.fromErgoTree(contract.getErgoTree, ctx.getNetworkType)
     contractAddress

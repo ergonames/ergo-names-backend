@@ -28,7 +28,7 @@ class MintingRequestService {
 
   def submit(ctx: BlockchainContext, prover: ErgoProver, ergoConfig: ErgoToolConfig): String = {
     // LOAD CONFIG VALUES
-    val mintingContractAddress = ErgoNamesMintingContract.getContractAddress(ctx, ergoConfig.getNode.getWallet)
+    val mintingContractAddress = ErgoNamesMintingContract.getContractAddress(ctx, prover.getEip3Addresses.get(0))
     val royaltyPercentage = ergoConfig.getParameters.get("royaltyPercentage").toInt
     val tokenName = ergoConfig.getParameters.get("tokenName")
     val paymentAmount = ergoConfig.getParameters.get("paymentAmount").toLong
