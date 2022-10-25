@@ -49,6 +49,8 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     // BUILD UNSIGNED TX
     val inputs = List(ergoNamesInBox, mintRequestInBox)
     val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox, ergonamesMinBox)
+    val totalOutputValue = nftIssuanceOutBox.getValue + paymentCollectionOutBox.getValue + ergonamesMinBox.getValue
+
 
     val correctChangeAddress = prover.getEip3Addresses().get(0).getErgoAddress()
     val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, correctChangeAddress)
