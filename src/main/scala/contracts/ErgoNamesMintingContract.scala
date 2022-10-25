@@ -56,7 +56,7 @@ object ErgoNamesMintingContract {
         val txFee = 1000000
         val minChangeValue = 1000000
 
-        // Verify INPUTS(0) is from ErgoNames
+        // Verify INPUTS(0) is from ErgoNames and has R4 set
         val ergoNamesInput = {
           val isErgoNamesSender = INPUTS(0).propositionBytes == ergoNamesPk.propBytes
 
@@ -68,24 +68,35 @@ object ErgoNamesMintingContract {
           isErgoNamesSender
         }
 
+        // Check INPUTS(1) has registers set (R4, R5, R6)
+        val mintingRequestBoxInput = {
+          val r4Defined = INPUTS(1).R4[Coll[Byte]].isDefined
+          val r5Defined = INPUTS(1).R5[Long].isDefined
+          val r6Defined = INPUTS(1).R6[Coll[Byte]].isDefined
+
+          r4Defined && r5Defined && r6Defined
+        }
+
+        // Check OUTPUTS(0) is correct
         val outputZeroOk = {
           val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == INPUTS(0).id
           val proposedTokenIsNonFungible = OUTPUTS(0).tokens(0)._2 == 1
           val proposedTokenSpecsOk = proposedTokenHasSameIdAsFirstTxInput && proposedTokenIsNonFungible
 
-          val expectedTokenName = INPUTS(1).R5[Coll[Byte]].get
+          val expectedTokenName = INPUTS(1).R4[Coll[Byte]].get
           val proposedTokenName = OUTPUTS(0).R4[Coll[Byte]].get
           val tokenNameOk = expectedTokenName == proposedTokenName
 
-          val expectedReceiverAddress = INPUTS(1).R7[Coll[Byte]].get
+          val expectedReceiverAddress = INPUTS(1).R6[Coll[Byte]].get
           val proposedReceiverAddress = OUTPUTS(0).propositionBytes
           val receiverAddressOk = expectedReceiverAddress == proposedReceiverAddress
 
           proposedTokenSpecsOk && tokenNameOk && receiverAddressOk
         }
 
+        // Check OUTPUTS(1) is correct
         val outputOneOk = {
-          val expectedPayment = INPUTS(1).R6[Long].get - minChangeValue
+          val expectedPayment = INPUTS(1).R5[Long].get - minChangeValue
           val amountBeingCollected = OUTPUTS(1).value
           val collectedPaymentOk = amountBeingCollected >= expectedPayment
 
@@ -94,6 +105,7 @@ object ErgoNamesMintingContract {
           collectedPaymentOk && collectedByPaymentAddress
         }
 
+        // Check OUTPUTS(2) is correct
         val outputTwoOk = {
           val amountBeingSentToErgoNames = OUTPUTS(2).value == minChangeValue
           val ergoNamesReceivesMinChange = OUTPUTS(2).propositionBytes == ergoNamesPk.propBytes
@@ -105,13 +117,12 @@ object ErgoNamesMintingContract {
 
         // Verify all the requirements for minting the NFT are met
         val mintToken = {
-          // ergoNamesInput && outputZeroOk && outputOneOk && outputTwoOk
-          ergoNamesInput && outputZeroOk && outputOneOk && outputTwoOk
+          ergoNamesInput && mintingRequestBoxInput && outputZeroOk && outputOneOk && outputTwoOk
         }
 
         // In case of a refund, check that funds are going back to the sender
         val issueRefund = {
-            val senderAddress = INPUTS(1).R7[Coll[Byte]].get
+            val senderAddress = INPUTS(1).R6[Coll[Byte]].get
             val fundsAreGoingBackToSender = senderAddress == OUTPUTS(0).propositionBytes
 
             val inputsValue = INPUTS(0).value + INPUTS(1).value

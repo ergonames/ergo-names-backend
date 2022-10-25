@@ -77,14 +77,14 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
   }
 
   def extractArgsFromMintRequestBox(mintRequestBox: InputBox, networkType: NetworkType): MintRequestArgs = {
-    val R5_tokenNameBytes = mintRequestBox.getRegisters.get(1).getValue.asInstanceOf[CollOverArray[Byte]].toArray
-    val R6_expectedPaymentAmount = mintRequestBox.getRegisters.get(2).getValue.asInstanceOf[Long]
-    val R7_receiverAddressBytes = mintRequestBox.getRegisters.get(3).getValue.asInstanceOf[CollOverArray[Byte]].toArray
+    val R4_tokenNameBytes = mintRequestBox.getRegisters.get(0).getValue.asInstanceOf[CollOverArray[Byte]].toArray
+    val R5_expectedPaymentAmount = mintRequestBox.getRegisters.get(1).getValue.asInstanceOf[Long]
+    val R6_receiverAddressBytes = mintRequestBox.getRegisters.get(2).getValue.asInstanceOf[CollOverArray[Byte]].toArray
 
-    val deserializedReceiverAddress = ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R7_receiverAddressBytes)
+    val deserializedReceiverAddress = ErgoTreeSerializer.DefaultSerializer.deserializeErgoTree(R6_receiverAddressBytes)
     val receiverAddress = Address.fromErgoTree(deserializedReceiverAddress, networkType)
 
-    MintRequestArgs(new String(R5_tokenNameBytes), R6_expectedPaymentAmount, receiverAddress)
+    MintRequestArgs(new String(R4_tokenNameBytes), R5_expectedPaymentAmount, receiverAddress)
   }
 
   def buildNftIssuanceOutBox(ctx: BlockchainContext, boxValue: Long, mintRequestArgs: MintRequestArgs, nft: Eip4Token): OutBox = {

@@ -9,13 +9,12 @@ import utils.{ErgoNamesUtils, ErgoNamesUtilsV2}
 import scala.collection.JavaConverters._
 
 class MintingRequestService {
-  def buildBoxRegisters(royalty: Int, tokenName: String, expectedPayment: Long, receiverAddress: Address): List[ErgoValue[_]] = {
-    val R4_royaltyErgoVal = ErgoValue.of(royalty)
-    val R5_tokenNameErgoVal = ErgoValue.of(tokenName.getBytes())
-    val R6_paymentAmountErgoVal = ErgoValue.of(expectedPayment)
-    val R7_receiverAddressErgoVal = ErgoValue.of(receiverAddress.getErgoAddress.script.bytes)
+  def buildBoxRegisters(tokenName: String, expectedPayment: Long, receiverAddress: Address): List[ErgoValue[_]] = {
+    val R4_tokenNameErgoVal = ErgoValue.of(tokenName.getBytes())
+    val R5_paymentAmountErgoVal = ErgoValue.of(expectedPayment)
+    val R6_receiverAddressErgoVal = ErgoValue.of(receiverAddress.getErgoAddress.script.bytes)
 
-    List(R4_royaltyErgoVal, R5_tokenNameErgoVal, R6_paymentAmountErgoVal, R7_receiverAddressErgoVal)
+    List(R4_tokenNameErgoVal, R5_paymentAmountErgoVal, R6_receiverAddressErgoVal)
   }
 
   def buildBox(ctx: BlockchainContext, boxValue: Long, mintingContractAddress: Address, registers: List[ErgoValue[_]]): OutBox = {
@@ -29,7 +28,6 @@ class MintingRequestService {
   def submit(ctx: BlockchainContext, prover: ErgoProver, ergoConfig: ErgoToolConfig): String = {
     // LOAD CONFIG VALUES
     val mintingContractAddress = ErgoNamesMintingContract.getContractAddress(ctx, prover.getEip3Addresses.get(0))
-    val royaltyPercentage = ergoConfig.getParameters.get("royaltyPercentage").toInt
     val tokenName = ergoConfig.getParameters.get("tokenName")
     val paymentAmount = ergoConfig.getParameters.get("paymentAmount").toLong
     val nftReceiverAddress = Address.create(ergoConfig.getParameters.get("nftReceiverAddress"))
@@ -45,7 +43,7 @@ class MintingRequestService {
 
     // BUILD OUTPUTS
     val outputs = {
-      val outBoxRegisters = buildBoxRegisters(royaltyPercentage, tokenName, paymentAmount, nftReceiverAddress)
+      val outBoxRegisters = buildBoxRegisters(tokenName, paymentAmount, nftReceiverAddress)
       // Minting Request Box has to have enough fund to cover: 1) tx fee, 2) expected payment, 3) min erg value for issuance box
       val outBoxValue = Parameters.MinFee + paymentAmount + Parameters.MinChangeValue
       val mintingRequestBox = buildBox(ctx, outBoxValue, mintingContractAddress, outBoxRegisters)
