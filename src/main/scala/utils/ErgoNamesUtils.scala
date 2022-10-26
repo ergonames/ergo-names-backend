@@ -64,8 +64,8 @@ object ErgoNamesUtils {
     justEnoughBoxes.toList.asJava
   }
 
-  def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog): (OutBox, ErgoContract) = {
-    val compiledContract: ErgoContract = ErgoNamesMintingContract.getContract(ctx, ergoNamesPk)
+  def buildContractBox(ctx: BlockchainContext, amountToSend: Long, script: String, ergoNamesPk: ProveDlog, paymentAddressPk: ProveDlog): (OutBox, ErgoContract) = {
+    val compiledContract: ErgoContract = ErgoNamesMintingContract.getContract(ctx, ergoNamesPk, paymentAddressPk)
 
     val b = ctx.newTxBuilder.outBoxBuilder
       .value(amountToSend)

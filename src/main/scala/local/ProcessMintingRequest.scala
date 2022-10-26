@@ -1,6 +1,6 @@
 package local
 
-import org.ergoplatform.appkit.BlockchainContext
+import org.ergoplatform.appkit.{Address, BlockchainContext}
 import org.ergoplatform.appkit.config.ErgoToolConfig
 import services.Minter
 import utils.ErgoNamesUtils
@@ -17,7 +17,9 @@ object ProcessMintingRequest {
       val prover = ErgoNamesUtils.buildProver(ctx, ergoConfig.getNode)
       val mintingRequestBoxId = ergoConfig.getParameters.get("mintRequestBoxId")
       val royalty = ergoConfig.getParameters.get("royaltyPercentage").toInt
-      minter.mint(mintingRequestBoxId, royalty, ctx, prover, nodeService, walletService)
+      val paymentAddressRaw = ergoConfig.getParameters.get("paymentAddress")
+      val paymentAddress = Address.create(paymentAddressRaw)
+      minter.mint(mintingRequestBoxId, royalty, ctx, prover, paymentAddress, nodeService, walletService)
     })
 
     println(txId)

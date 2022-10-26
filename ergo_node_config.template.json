@@ -12,6 +12,7 @@
         "networkType": "TESTNET"
     },
     "parameters": {
+        "paymentAddress": "",
         "addressIndex": 0,
         "mintRequestBoxId": "",
         "nftReceiverAddress": "",

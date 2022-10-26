@@ -54,58 +54,75 @@ object ErgoNamesMintingContract {
     val script: String = s"""
       {
         val txFee = 1000000
+        val minChangeValue = 1000000
 
-        // Verify INPUTS(0) is from ErgoNames
+        // Verify INPUTS(0) is from ErgoNames and has R4 set
         val ergoNamesInput = {
-          val senderAddress = INPUTS(0).propositionBytes
-          val isErgoNamesSender = senderAddress == ergoNamesPk.propBytes
+          val isErgoNamesSender = INPUTS(0).propositionBytes == ergoNamesPk.propBytes
 
-          val specifiedRoyalty = INPUTS(0).R4[Int].get
-          val expectedRoyalty = 20
-          val isRoyaltyCorrect = specifiedRoyalty == expectedRoyalty
+           val specifiedRoyalty = INPUTS(0).R4[Int].get
+           val expectedRoyalty = 20
+           val isRoyaltyCorrect = specifiedRoyalty == expectedRoyalty
 
-          isErgoNamesSender && isRoyaltyCorrect
+          // TODO: Check for royalty in ergonames in box
+          isErgoNamesSender
         }
 
-        // Verify INPUTS(1) meets all the requirements for minting the NFT
-        val mintingRequestInput = {
-          // Verify token is an NFT
+        // Check INPUTS(1) has registers set (R4, R5, R6)
+        val mintingRequestBoxInput = {
+          val r4Defined = INPUTS(1).R4[Coll[Byte]].isDefined
+          val r5Defined = INPUTS(1).R5[Long].isDefined
+          val r6Defined = INPUTS(1).R6[Coll[Byte]].isDefined
+
+          r4Defined && r5Defined && r6Defined
+        }
+
+        // Check OUTPUTS(0) is correct
+        val outputZeroOk = {
           val proposedTokenHasSameIdAsFirstTxInput = OUTPUTS(0).tokens(0)._1 == INPUTS(0).id
           val proposedTokenIsNonFungible = OUTPUTS(0).tokens(0)._2 == 1
           val proposedTokenSpecsOk = proposedTokenHasSameIdAsFirstTxInput && proposedTokenIsNonFungible
 
-          // Verify name of token being issued is correct
-          val expectedTokenName = INPUTS(1).R5[Coll[Byte]].get
+          val expectedTokenName = INPUTS(1).R4[Coll[Byte]].get
           val proposedTokenName = OUTPUTS(0).R4[Coll[Byte]].get
           val tokenNameOk = expectedTokenName == proposedTokenName
 
-          // Verify correct payment is being collected
-          val expectedPayment = INPUTS(1).R6[Long].get
-          val amountBeingCollected = OUTPUTS(1).value - txFee
-          val collectedPaymentOk = amountBeingCollected == expectedPayment
-
-          // Verify payment is being sent to the correct address
-          val collectedByErgoNames = OUTPUTS(1).propositionBytes == ergoNamesPk.propBytes
-
-          // Verify that NFT is being sent back to the user
-          val expectedReceiverAddress = INPUTS(1).R7[Coll[Byte]].get
+          val expectedReceiverAddress = INPUTS(1).R6[Coll[Byte]].get
           val proposedReceiverAddress = OUTPUTS(0).propositionBytes
           val receiverAddressOk = expectedReceiverAddress == proposedReceiverAddress
 
-          // Verify that the first input comes from
-          val firstInputIsFromErgoNames = INPUTS(0).propositionBytes == ergoNamesPk.propBytes
+          proposedTokenSpecsOk && tokenNameOk && receiverAddressOk
+        }
 
-          proposedTokenSpecsOk && tokenNameOk && collectedPaymentOk && collectedByErgoNames && receiverAddressOk && firstInputIsFromErgoNames
+        // Check OUTPUTS(1) is correct
+        val outputOneOk = {
+          val expectedPayment = INPUTS(1).R5[Long].get - minChangeValue
+          val amountBeingCollected = OUTPUTS(1).value
+          val collectedPaymentOk = amountBeingCollected >= expectedPayment
+
+          val collectedByPaymentAddress = OUTPUTS(1).propositionBytes == paymentCollectionPk.propBytes
+
+          collectedPaymentOk && collectedByPaymentAddress
+        }
+
+        // Check OUTPUTS(2) is correct
+        val outputTwoOk = {
+          val amountBeingSentToErgoNames = OUTPUTS(2).value == minChangeValue
+          val ergoNamesReceivesMinChange = OUTPUTS(2).propositionBytes == ergoNamesPk.propBytes
+          val ergoNamesRoyaltyInfoSet = OUTPUTS(2).R4[Int].get == 20
+          val ergoNamesReceivesOk = amountBeingSentToErgoNames && ergoNamesReceivesMinChange && ergoNamesRoyaltyInfoSet
+
+          ergoNamesReceivesOk
         }
 
         // Verify all the requirements for minting the NFT are met
         val mintToken = {
-          ergoNamesInput && mintingRequestInput
+          ergoNamesInput && mintingRequestBoxInput && outputZeroOk && outputOneOk && outputTwoOk
         }
 
         // In case of a refund, check that funds are going back to the sender
         val issueRefund = {
-            val senderAddress = INPUTS(1).R7[Coll[Byte]].get
+            val senderAddress = INPUTS(1).R6[Coll[Byte]].get
             val fundsAreGoingBackToSender = senderAddress == OUTPUTS(0).propositionBytes
 
             val inputsValue = INPUTS(0).value + INPUTS(1).value
@@ -116,36 +133,25 @@ object ErgoNamesMintingContract {
             fundsAreGoingBackToSender && correctAmountBeingReturned
         }
 
-
-        val collectRoyalty = {
-          // checking for empty registers is a way to prevent ErgoNames from just collecting funds from a valid minting request box without actually issuing an NFT.
-          val isNotMintingRequest = !(INPUTS(1).R4[Int].isDefined) && !(INPUTS(1).R5[Coll[Byte]].isDefined) && !(INPUTS(1).R6[Long].isDefined) && !(INPUTS(1).R7[Coll[Byte]].isDefined)
-          val beingCollectedByErgoNames = OUTPUTS(0).propositionBytes == ergoNamesPk.propBytes // could actually make royalties go to royalties contract
-
-          isNotMintingRequest && beingCollectedByErgoNames
-        }
-
-        sigmaProp((mintToken || issueRefund || collectRoyalty) && ergoNamesPk)
+        sigmaProp((mintToken || issueRefund) && ergoNamesPk)
       }
       """.stripMargin
 
     script
   }
 
-  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog): ErgoContract = {
+  def getContract(ctx: BlockchainContext, ergoNamesPk: ProveDlog, paymentCollectionPk: ProveDlog): ErgoContract = {
     val script = getScript
-    val constants = ConstantsBuilder.create().item("ergoNamesPk", ergoNamesPk).build()
+    val constants = ConstantsBuilder.create()
+      .item("ergoNamesPk", ergoNamesPk)
+      .item("paymentCollectionPk", paymentCollectionPk)
+      .build()
     val compiledContract: ErgoContract = ctx.compileContract(constants, script)
     compiledContract
   }
 
-  def getContractAddress(ctx: BlockchainContext, walletConfig: WalletConfig): Address = {
-    val ergoNamesAddress = Address.fromMnemonic(
-      ctx.getNetworkType,
-      SecretString.create(walletConfig.getMnemonic),
-      SecretString.create(walletConfig.getPassword))
-
-    val contract = getContract(ctx, ergoNamesAddress.getPublicKey)
+  def getContractAddress(ctx: BlockchainContext, ergoNamesAddress: Address, paymentAddress: Address): Address = {
+    val contract = getContract(ctx, ergoNamesAddress.getPublicKey, paymentAddress.getPublicKey)
     val contractAddress = Address.fromErgoTree(contract.getErgoTree, ctx.getNetworkType)
     contractAddress
   }
