@@ -1,7 +1,7 @@
 {
-    "name": "Scala",
-	"image": "meisamf/gitpod-scala:scala3.2.1-openjdk17-bullseye",
+    "name": "ErgoNames Backend",
     "extensions": [
         "scalameta.metals"       
-    ]
+    ],
+    "onCreateCommand": "/bin/bash tools/bash/install_scala.sh"
 }
