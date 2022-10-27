@@ -1,4 +1,4 @@
-FROM mozilla/sbt as builder
+FROM mozilla/sbt:8u292_1.5.7 as builder
 COPY . /lambda/src/
 WORKDIR /lambda/src/
 RUN sbt assembly
