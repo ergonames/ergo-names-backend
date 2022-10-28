@@ -6,51 +6,51 @@ on:
     branches:
       - testnet
     paths:
-      - 'src/**'
-      - 'Dockerfile'
-      - 'build.sbt'
-      - '.github/workflows/build-and-publish-testnet-minter.yml'
-  
+      - "src/**"
+      - "Dockerfile"
+      - "build.sbt"
+      - ".github/workflows/build-and-publish-testnet-minter.yml"
+
 jobs:
   build-and-publish-image:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v2
-    
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-2
-    
-    - name: ECR Login
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
-    
-    - name: Build, tag, and push image to ECR
-      env: 
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: minter
-        IMAGE_TAG: testnet-latest
-      run: |
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        
-    - name: Update minter lambda
-      env:
-        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: minter
-        IMAGE_TAG: testnet-latest
-        FUNCTION_NAME: minter-testnet
-      run: |
-        aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Checkout Code
+        uses: actions/checkout@v2
 
-    - name: Cleanup untagged images
-      env:
-        ECR_REGION: us-east-2
-        ECR_REPOSITORY: minter
-      runs: |
-        IMAGES_TO_DELETE=$(aws ecr list-images --region $ECR_REGION --repository-name $ECR_REPOSITORY --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)
-        aws ecr batch-delete-image --region $ECR_REGION --repository-name $ECR_REPOSITORY --image-ids "$IMAGES_TO_DELETE" || true
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+
+      - name: ECR Login
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: minter
+          IMAGE_TAG: testnet-latest
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update minter lambda
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: minter
+          IMAGE_TAG: testnet-latest
+          FUNCTION_NAME: minter-testnet
+        run: |
+          aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Cleanup untagged images
+        env:
+          ECR_REGION: us-east-2
+          ECR_REPOSITORY: minter
+        run: |
+          IMAGES_TO_DELETE=$(aws ecr list-images --region $ECR_REGION --repository-name $ECR_REPOSITORY --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)
+          aws ecr batch-delete-image --region $ECR_REGION --repository-name $ECR_REPOSITORY --image-ids "$IMAGES_TO_DELETE" || true
