@@ -46,3 +46,11 @@ jobs:
         FUNCTION_NAME: minter-testnet
       run: |
         aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Cleanup untagged images
+      env:
+        ECR_REGION: us-east-2
+        ECR_REPOSITORY: minter
+      runs: |
+        IMAGES_TO_DELETE=$(aws ecr list-images --region $ECR_REGION --repository-name $ECR_REPOSITORY --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --output json)
+        aws ecr batch-delete-image --region $ECR_REGION --repository-name $ECR_REPOSITORY --image-ids "$IMAGES_TO_DELETE" || true
