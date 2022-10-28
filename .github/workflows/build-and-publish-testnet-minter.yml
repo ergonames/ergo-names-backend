@@ -9,6 +9,7 @@ on:
       - 'src/**'
       - 'Dockerfile'
       - 'build.sbt'
+      - './github/workflows/build-and-publish-testnet-minter.yml'
   
 jobs:
   build-and-publish-image:
