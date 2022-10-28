@@ -36,3 +36,12 @@ jobs:
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        
+    - name: Update minter lambda
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: minter
+        IMAGE_TAG: testnet-latest
+        FUNCTION_NAME: minter-testnet
+      run: |
+        aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $ECR_REPOSITORY:$IMAGE_TAG
