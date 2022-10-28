@@ -3,5 +3,5 @@
     "extensions": [
         "scalameta.metals"       
     ],
-    "onCreateCommand": "/bin/bash tools/bash/install_scala.sh"
+    "onCreateCommand": "/bin/bash scripts/setup/configure_environment.sh"
 }
