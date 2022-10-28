@@ -44,4 +44,4 @@ jobs:
         IMAGE_TAG: testnet-latest
         FUNCTION_NAME: minter-testnet
       run: |
-        aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $ECR_REPOSITORY:$IMAGE_TAG
+        aws lambda update-function-code --function-name $FUNCTION_NAME --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
