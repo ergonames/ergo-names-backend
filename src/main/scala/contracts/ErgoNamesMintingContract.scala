@@ -65,7 +65,7 @@ object ErgoNamesMintingContract {
            val isRoyaltyCorrect = specifiedRoyalty == expectedRoyalty
 
           // TODO: Check for royalty in ergonames in box
-          isErgoNamesSender
+          isErgoNamesSender && isRoyaltyCorrect
         }
 
         // Check INPUTS(1) has registers set (R4, R5, R6)
