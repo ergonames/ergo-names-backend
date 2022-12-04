@@ -6,6 +6,7 @@ import org.ergoplatform.ErgoAddress
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.impl.{Eip4TokenBuilder, ErgoTreeContract}
 import org.ergoplatform.restapi.client.UtxoApi
+import org.slf4j.Logger
 import services.AppKitWorkaround.NewWalletApi
 import sigmastate.serialization.ErgoTreeSerializer
 import special.collection.CollOverArray
@@ -14,13 +15,17 @@ import utils.ErgoNamesUtils
 import java.nio.charset.StandardCharsets
 import scala.collection.JavaConverters._
 
-class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
+class Minter(logger: Logger) {
   def mint(boxId: String, royalty: Int, ctx: BlockchainContext, prover: ErgoProver, paymentAddress: Address, nodeService: UtxoApi, walletService: NewWalletApi): String = {
     // GET INPUT(S)
+    logger.info("PHASE 1: Gather inputs")
+    logger.info("STEP 1.1: Get IdentityBox (INPUT[0]) from ErgoNames minting wallet")
     val ergoNamesInBox = ErgoNamesUtils.getUnspentBoxesFromWallet(walletService, Parameters.MinChangeValue).get(0)
+    logger.info("STEP 1.2: Get get MintingRequestBox (INPUT[1])from network")
     val mintRequestInBox = getMintRequestBox(ctx, nodeService, boxId)
 
     // BUILD OUTPUTS
+    logger.info("PHASE 2: Build outputs")
     val totalInputValue = ergoNamesInBox.getValue + mintRequestInBox.getValue
     val txFee = Parameters.MinFee
     val nftIssuanceBoxValue = Parameters.MinChangeValue
@@ -46,6 +51,7 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val ergonamesMinBox = buildErgoNamesMinBox(ctx, Parameters.MinChangeValue, prover.getEip3Addresses().get(0), royalty)
 
     // BUILD UNSIGNED TX
+    logger.info("PHASE 3: Build unsigned tx")
     val inputs = List(ergoNamesInBox, mintRequestInBox)
     val outputs = List(nftIssuanceOutBox, paymentCollectionOutBox, ergonamesMinBox)
     val totalOutputValue = nftIssuanceOutBox.getValue + paymentCollectionOutBox.getValue + ergonamesMinBox.getValue
@@ -55,13 +61,15 @@ class Minter(/*networkType: NetworkType = NetworkType.TESTNET*/) {
     val unsignedTx = buildUnsignedTx(ctx, inputs, outputs, Parameters.MinFee, correctChangeAddress)
 
     // SIGN AND SUBMIT TX
+    logger.info("PHASE 4: Sign and submit tx to network")
+    logger.info("STEP 4.1: Sign tx")
     val signedTx = prover.sign(unsignedTx)
+    logger.info("STEP 4.2: Submit tx")
     val txId = ctx.sendTransaction(signedTx)
     txId
   }
 
   def getMintRequestBox(ctx: BlockchainContext, nodeService: UtxoApi, boxId: String): InputBox = {
-    //   getFromMempool, if null getFromOnChainUtxoSet
     val mempoolBox = ErgoNamesUtils.getUnspentBoxFromMempool(ctx, nodeService, boxId)
     if (mempoolBox != null)
       return mempoolBox
