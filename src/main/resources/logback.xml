@@ -7,7 +7,7 @@
                 <appendLineSeparator>true</appendLineSeparator>
 
                 <jsonFormatter class="ch.qos.logback.contrib.jackson.JacksonJsonFormatter">
-                    <prettyPrint>false</prettyPrint>
+                    <prettyPrint>true</prettyPrint>
                 </jsonFormatter>
             </layout>
         </encoder>
