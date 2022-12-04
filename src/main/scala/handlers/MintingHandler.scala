@@ -5,6 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent
 import models.MintingRequestSqsMessage
 import org.ergoplatform.appkit._
 import org.ergoplatform.appkit.config.ErgoToolConfig
+import org.slf4j.LoggerFactory
 import play.api.libs.json.{Json, OWrites, Reads}
 import services.Minter
 import utils.{AwsHelper, ErgoNamesUtils}
@@ -13,6 +14,8 @@ import java.io.StringReader
 import scala.collection.JavaConverters._
 
 class MintingHandler {
+  val logger = LoggerFactory.getLogger(getClass)
+
   implicit val mintRequestSqsMessageReads: Reads[MintingRequestSqsMessage] = Json.reads[MintingRequestSqsMessage]
   implicit val mintRequestSqsMessageWrites: OWrites[MintingRequestSqsMessage] = Json.writes[MintingRequestSqsMessage]
 
@@ -46,7 +49,7 @@ class MintingHandler {
                  else
                     "NOT running in dry mode - will attempt to process minting request and query node"
 
-    val minter = new Minter()
+    val minter = new Minter(LoggerFactory.getLogger(classOf[Minter]))
     val txIds = ergoClient.execute((ctx: BlockchainContext) => {
       val prover = ErgoNamesUtils.buildProver(ctx, ergoConfig.getNode)
       val nodeService = ErgoNamesUtils.buildNodeService(ergoConfig)
