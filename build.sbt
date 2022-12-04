@@ -15,6 +15,7 @@ libraryDependencies += "ch.qos.logback.contrib" % "logback-jackson" % "0.1.5"
 libraryDependencies += "ch.qos.logback.contrib" % "logback-json-classic" % "0.1.5"
 libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5"
 libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.25"
+libraryDependencies += "com.github.dwickern" %% "scala-nameof" % "4.0.0" % "provided"
 
 // Java dependencies
 libraryDependencies += "org.mockito" % "mockito-core" % "4.3.1" % Test
